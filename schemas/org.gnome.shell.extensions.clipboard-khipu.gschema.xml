@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="clipboard-khipu">
+  <schema id="org.gnome.shell.extensions.clipboard-khipu"
+          path="/org/gnome/shell/extensions/clipboard-khipu/">
+
+    <key name="open-history" type="as">
+      <default>['&lt;Super&gt;v']</default>
+      <summary>Open clipboard history</summary>
+      <description>Keybinding that opens the clipboard history popup.</description>
+    </key>
+
+    <key name="history-size" type="i">
+      <default>25</default>
+      <range min="1" max="200"/>
+      <summary>History size</summary>
+      <description>Maximum number of entries kept in the clipboard history.</description>
+    </key>
+
+    <key name="auto-paste" type="b">
+      <default>true</default>
+      <summary>Auto paste on select</summary>
+      <description>Automatically simulate Ctrl+V after selecting an entry from the popup.</description>
+    </key>
+
+    <key name="capture-images" type="b">
+      <default>true</default>
+      <summary>Capture images</summary>
+      <description>Whether image content copied to the clipboard is stored in history.</description>
+    </key>
+
+    <key name="capture-files" type="b">
+      <default>true</default>
+      <summary>Capture files</summary>
+      <description>Whether files copied in a file manager (e.g. Nautilus) are stored in history.</description>
+    </key>
+
+    <key name="exclude-passwords" type="b">
+      <default>true</default>
+      <summary>Exclude passwords</summary>
+      <description>Skip clipboard content flagged as a password by the source application.</description>
+    </key>
+
+  </schema>
+</schemalist>

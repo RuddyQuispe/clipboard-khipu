@@ -1,0 +1,20 @@
+{
+  "name": "clipboard-khipu",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Developer-focused clipboard history for GNOME Shell (Super+V, like Windows).",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "compile-schemas": "glib-compile-schemas schemas/",
+    "install-link": "bash scripts/install-link.sh",
+    "nested": "bash scripts/run-nested.sh",
+    "pack": "npm run build && npm run compile-schemas"
+  },
+  "devDependencies": {
+    "@girs/gjs": "4.1.0",
+    "@girs/gnome-shell": "50.0.4",
+    "typescript": "^7.0.2"
+  }
+}

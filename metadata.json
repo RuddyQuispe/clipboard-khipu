@@ -1,0 +1,10 @@
+{
+  "uuid": "clipboard-khipu@ruddy.local",
+  "name": "Clipboard Khipu",
+  "description": "Developer-focused clipboard history for GNOME Shell. Press Super+V to see what you've copied — text, images and files — and paste it back exactly as it was.",
+  "shell-version": ["50"],
+  "url": "",
+  "settings-schema": "org.gnome.shell.extensions.clipboard-khipu",
+  "gettext-domain": "clipboard-khipu",
+  "version-name": "0.1.0"
+}

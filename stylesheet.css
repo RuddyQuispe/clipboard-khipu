@@ -1,0 +1,72 @@
+.khipu-popup {
+    background-color: rgba(20, 20, 22, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 8px;
+    spacing: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.khipu-search {
+    padding: 8px 10px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #f5f5f5;
+    font-size: 11pt;
+}
+
+.khipu-search:focus {
+    border: 1px solid rgba(53, 132, 228, 0.8);
+}
+
+.khipu-scroll {
+    -st-vfade-offset: 12px;
+}
+
+.khipu-list {
+    spacing: 2px;
+}
+
+.khipu-empty {
+    color: rgba(255, 255, 255, 0.5);
+    padding: 16px;
+    font-style: italic;
+}
+
+.khipu-row {
+    padding: 6px 8px;
+    border-radius: 8px;
+    spacing: 10px;
+}
+
+.khipu-row:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.khipu-row-selected {
+    background-color: rgba(53, 132, 228, 0.35);
+}
+
+.khipu-row-icon {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.khipu-row-text {
+    spacing: 2px;
+}
+
+.khipu-row-primary {
+    color: #f5f5f5;
+    font-size: 10.5pt;
+}
+
+.khipu-row-primary-mono {
+    font-family: monospace;
+    font-size: 10pt;
+}
+
+.khipu-row-meta {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 8.5pt;
+}
