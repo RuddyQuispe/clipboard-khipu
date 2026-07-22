@@ -40,5 +40,11 @@
       <description>Skip clipboard content flagged as a password by the source application.</description>
     </key>
 
+    <key name="terminal-wm-classes" type="as">
+      <default>['terminal','konsole','kitty','alacritty','foot','wezterm','xterm','terminator','tilix','console','kgx','ptyxis','ghostty','rio','contour','yakuake','guake','st-256color','urxvt','blackbox']</default>
+      <summary>Terminal window hints</summary>
+      <description>Windows whose WM class or app id contains any of these tokens (case-insensitive) are pasted into with Ctrl+Shift+V instead of Ctrl+V.</description>
+    </key>
+
   </schema>
 </schemalist>

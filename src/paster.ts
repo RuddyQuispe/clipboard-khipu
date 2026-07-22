@@ -25,10 +25,19 @@ function notifyKey(keyval: number, state: Clutter.KeyState): void {
     getVirtualKeyboard().notify_keyval(GLib.get_monotonic_time(), keyval, state);
 }
 
-function simulateCtrlV(): void {
+/**
+ * Synthesizes the paste shortcut. Normal apps take Ctrl+V; terminals take
+ * Ctrl+Shift+V (Ctrl+V does not paste in VTE-based terminals), so the caller
+ * decides based on the target window.
+ */
+function simulatePaste(withShift: boolean): void {
     notifyKey(Clutter.KEY_Control_L, Clutter.KeyState.PRESSED);
+    if (withShift)
+        notifyKey(Clutter.KEY_Shift_L, Clutter.KeyState.PRESSED);
     notifyKey(Clutter.KEY_v, Clutter.KeyState.PRESSED);
     notifyKey(Clutter.KEY_v, Clutter.KeyState.RELEASED);
+    if (withShift)
+        notifyKey(Clutter.KEY_Shift_L, Clutter.KeyState.RELEASED);
     notifyKey(Clutter.KEY_Control_L, Clutter.KeyState.RELEASED);
 }
 
@@ -67,15 +76,17 @@ async function applyToClipboard(entry: HistoryEntry, monitor: ClipboardMonitor):
 }
 
 /**
- * Restores `entry` to the clipboard and, if requested, synthesizes Ctrl+V so
- * it lands directly in whatever was focused before the history popup opened.
+ * Restores `entry` to the clipboard and, if requested, synthesizes the paste
+ * shortcut so it lands directly in whatever was focused before the history
+ * popup opened. `pasteWithShift` selects Ctrl+Shift+V (terminals) over Ctrl+V.
  * If auto-paste fails or is disabled, the content is still on the clipboard,
- * so a manual Ctrl+V always works — the action is never lost.
+ * so a manual paste always works — the action is never lost.
  */
 export async function pasteEntry(
     entry: HistoryEntry,
     monitor: ClipboardMonitor,
-    autoPaste: boolean
+    autoPaste: boolean,
+    pasteWithShift: boolean
 ): Promise<void> {
     await applyToClipboard(entry, monitor);
 
@@ -83,7 +94,7 @@ export async function pasteEntry(
         return;
 
     GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, PASTE_FOCUS_SETTLE_MS, () => {
-        simulateCtrlV();
+        simulatePaste(pasteWithShift);
         return GLib.SOURCE_REMOVE;
     });
 }

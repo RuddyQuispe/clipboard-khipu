@@ -11,6 +11,7 @@ export default class ClipboardKhipuPreferences extends ExtensionPreferences {
         const page = new Adw.PreferencesPage({ title: 'Clipboard Khipu' });
 
         page.add(buildBehaviorGroup(settings));
+        page.add(buildTerminalGroup(settings));
         page.add(buildShortcutGroup(settings));
         page.add(buildDataGroup());
 
@@ -52,6 +53,29 @@ function buildBehaviorGroup(settings: Gio.Settings): Adw.PreferencesGroup {
     settings.bind('exclude-passwords', passwordsRow, 'active', Gio.SettingsBindFlags.DEFAULT);
     group.add(passwordsRow);
 
+    return group;
+}
+
+function buildTerminalGroup(settings: Gio.Settings): Adw.PreferencesGroup {
+    const group = new Adw.PreferencesGroup({
+        title: 'Terminals',
+        description:
+            'Windows whose WM class or app id contains any of these hints are pasted into with ' +
+            'Ctrl+Shift+V instead of Ctrl+V. Comma-separated, case-insensitive.',
+    });
+
+    const row = new Adw.EntryRow({ title: 'Terminal hints' });
+    row.set_text(settings.get_strv('terminal-wm-classes').join(', '));
+    row.connect('changed', () => {
+        const tokens = row
+            .get_text()
+            .split(',')
+            .map(token => token.trim())
+            .filter(token => token.length > 0);
+        settings.set_strv('terminal-wm-classes', tokens);
+    });
+
+    group.add(row);
     return group;
 }
 

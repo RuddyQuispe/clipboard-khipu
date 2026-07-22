@@ -87,15 +87,46 @@ export default class ClipboardKhipuExtension extends Extension {
             return;
 
         const autoPaste = settings.get_boolean('auto-paste');
+        // Capture the paste target now, before the popup grabs input — focus
+        // returns to this same window when the popup closes.
+        const pasteWithShift = this._targetIsTerminal(settings);
 
         if (entries.length === 1) {
-            pasteEntry(entries[0], monitor, autoPaste).catch(logError);
+            pasteEntry(entries[0], monitor, autoPaste, pasteWithShift).catch(logError);
             return;
         }
 
-        openHistoryPopup(entries, entry => {
-            pasteEntry(entry, monitor, autoPaste).catch(logError);
-        });
+        openHistoryPopup(
+            entries,
+            entry => {
+                pasteEntry(entry, monitor, autoPaste, pasteWithShift).catch(logError);
+            },
+            entry => store.remove(entry.id)
+        );
+    }
+
+    /**
+     * True when the currently focused window looks like a terminal, based on
+     * the configurable `terminal-wm-classes` token list. Terminals paste with
+     * Ctrl+Shift+V rather than Ctrl+V.
+     */
+    private _targetIsTerminal(settings: Gio.Settings): boolean {
+        const window = global.display.get_focus_window();
+        if (!window)
+            return false;
+
+        const ids = [
+            window.get_wm_class(),
+            window.get_wm_class_instance(),
+            window.get_gtk_application_id(),
+        ]
+            .filter((id): id is string => typeof id === 'string')
+            .map(id => id.toLowerCase());
+        if (ids.length === 0)
+            return false;
+
+        const tokens = settings.get_strv('terminal-wm-classes').map(token => token.toLowerCase());
+        return tokens.some(token => token.length > 0 && ids.some(id => id.includes(token)));
     }
 }
 

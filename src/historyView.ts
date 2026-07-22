@@ -9,9 +9,11 @@ const POPUP_WIDTH = 460;
 const POPUP_MAX_HEIGHT = 480;
 const ROW_HEIGHT = 52;
 const SEARCH_ROW_HEIGHT = 44;
+const FOOTER_ROW_HEIGHT = 30;
 const PREVIEW_MAX_LENGTH = 160;
 
 export type HistorySelectHandler = (entry: HistoryEntry) => void;
+export type HistoryDeleteHandler = (entry: HistoryEntry) => void;
 
 interface Row {
     actor: St.BoxLayout;
@@ -23,13 +25,19 @@ interface Row {
  * than one entry to choose from — a single entry is pasted directly by the
  * caller, with no UI at all.
  */
-export function openHistoryPopup(entries: readonly HistoryEntry[], onSelect: HistorySelectHandler): void {
-    new HistoryPopup(entries, onSelect).open();
+export function openHistoryPopup(
+    entries: readonly HistoryEntry[],
+    onSelect: HistorySelectHandler,
+    onDelete: HistoryDeleteHandler
+): void {
+    new HistoryPopup(entries, onSelect, onDelete).open();
 }
 
 class HistoryPopup {
-    private readonly _entries: readonly HistoryEntry[];
+    private _entries: HistoryEntry[];
     private readonly _onSelect: HistorySelectHandler;
+    private readonly _onDelete: HistoryDeleteHandler;
+    private readonly _backdrop: St.Widget;
     private readonly _container: St.BoxLayout;
     private readonly _searchEntry: St.Entry;
     private readonly _listBox: St.BoxLayout;
@@ -38,9 +46,10 @@ class HistoryPopup {
     private _selectedIndex = 0;
     private _grab: ReturnType<typeof Main.pushModal> | null = null;
 
-    constructor(entries: readonly HistoryEntry[], onSelect: HistorySelectHandler) {
-        this._entries = entries;
+    constructor(entries: readonly HistoryEntry[], onSelect: HistorySelectHandler, onDelete: HistoryDeleteHandler) {
+        this._entries = [...entries];
         this._onSelect = onSelect;
+        this._onDelete = onDelete;
 
         this._searchEntry = new St.Entry({
             style_class: 'khipu-search',
@@ -69,14 +78,32 @@ class HistoryPopup {
         });
         this._container.add_child(this._searchEntry);
         this._container.add_child(this._scrollView);
+        this._container.add_child(
+            new St.Label({
+                style_class: 'khipu-footer',
+                text: '↑↓ navigate · Enter paste · Shift+Del remove · Esc close',
+            })
+        );
+        // Swallow clicks inside the box so they never reach the backdrop below.
+        this._container.connect('button-press-event', () => Clutter.EVENT_STOP);
+
+        // Full-stage transparent backdrop: a click anywhere outside the box closes.
+        this._backdrop = new St.Widget({ reactive: true });
+        this._backdrop.add_child(this._container);
+        this._backdrop.connect('button-press-event', () => {
+            this._close();
+            return Clutter.EVENT_STOP;
+        });
 
         this._renderRows(this._entries);
     }
 
     open(): void {
-        Main.layoutManager.uiGroup.add_child(this._container);
+        const stage = global.stage;
+        this._backdrop.set_size(stage.width, stage.height);
+        Main.layoutManager.uiGroup.add_child(this._backdrop);
         this._position(this._entries.length);
-        this._grab = Main.pushModal(this._container);
+        this._grab = Main.pushModal(this._backdrop);
         this._searchEntry.grab_key_focus();
     }
 
@@ -85,7 +112,7 @@ class HistoryPopup {
             Main.popModal(this._grab);
             this._grab = null;
         }
-        this._container.destroy();
+        this._backdrop.destroy();
     }
 
     private _position(rowCount: number): void {
@@ -93,16 +120,19 @@ class HistoryPopup {
         if (!monitor)
             return;
 
-        const listHeight = Math.min(POPUP_MAX_HEIGHT - SEARCH_ROW_HEIGHT, Math.max(1, rowCount) * ROW_HEIGHT);
+        const listHeight = Math.min(
+            POPUP_MAX_HEIGHT - SEARCH_ROW_HEIGHT - FOOTER_ROW_HEIGHT,
+            Math.max(1, rowCount) * ROW_HEIGHT
+        );
         this._scrollView.set_height(listHeight);
 
-        const totalHeight = SEARCH_ROW_HEIGHT + listHeight;
+        const totalHeight = SEARCH_ROW_HEIGHT + listHeight + FOOTER_ROW_HEIGHT;
         const x = monitor.x + Math.floor((monitor.width - POPUP_WIDTH) / 2);
         const y = monitor.y + Math.floor((monitor.height - totalHeight) / 2);
         this._container.set_position(x, y);
     }
 
-    private _renderRows(entries: readonly HistoryEntry[]): void {
+    private _renderRows(entries: readonly HistoryEntry[], selectedIndex = 0): void {
         this._listBox.destroy_all_children();
         this._rows = entries.map(entry => ({ actor: this._buildRow(entry), entry }));
 
@@ -113,7 +143,8 @@ class HistoryPopup {
                 this._listBox.add_child(row.actor);
         }
 
-        this._selectedIndex = 0;
+        this._selectedIndex =
+            this._rows.length === 0 ? 0 : Math.min(Math.max(selectedIndex, 0), this._rows.length - 1);
         this._highlightSelected();
     }
 
@@ -137,10 +168,13 @@ class HistoryPopup {
         return row;
     }
 
-    private _onSearchChanged(): void {
+    private _currentFiltered(): readonly HistoryEntry[] {
         const query = this._searchEntry.get_text().trim().toLowerCase();
-        const filtered = query.length === 0 ? this._entries : this._entries.filter(entry => matches(entry, query));
-        this._renderRows(filtered);
+        return query.length === 0 ? this._entries : this._entries.filter(entry => matches(entry, query));
+    }
+
+    private _onSearchChanged(): void {
+        this._renderRows(this._currentFiltered());
     }
 
     private _onKeyPress(event: Clutter.Event): boolean {
@@ -159,9 +193,36 @@ class HistoryPopup {
         case Clutter.KEY_ISO_Enter:
             this._activateSelected();
             return Clutter.EVENT_STOP;
+        case Clutter.KEY_Delete:
+            // Shift+Delete removes the selected entry; plain Delete stays with
+            // the search field so forward-delete of the filter text still works.
+            if ((event.get_state() & Clutter.ModifierType.SHIFT_MASK) !== 0) {
+                this._deleteSelected();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
         default:
             return Clutter.EVENT_PROPAGATE;
         }
+    }
+
+    private _deleteSelected(): void {
+        const row = this._rows[this._selectedIndex];
+        if (!row)
+            return;
+
+        this._onDelete(row.entry);
+
+        const masterIndex = this._entries.findIndex(entry => entry.id === row.entry.id);
+        if (masterIndex !== -1)
+            this._entries.splice(masterIndex, 1);
+
+        if (this._entries.length === 0) {
+            this._close();
+            return;
+        }
+
+        this._renderRows(this._currentFiltered(), this._selectedIndex);
     }
 
     private _moveSelection(delta: number): void {
