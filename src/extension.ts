@@ -69,7 +69,13 @@ export default class ClipboardKhipuExtension extends Extension {
         this._monitor?.stop();
         this._monitor = null;
 
-        this._store?.flush();
+        // A persistence failure must never abort disable() — otherwise GNOME
+        // leaves the extension in ERROR state and won't re-enable it on unlock.
+        try {
+            this._store?.flush();
+        } catch (error) {
+            logError(error);
+        }
         this._store = null;
 
         this._settings = null;

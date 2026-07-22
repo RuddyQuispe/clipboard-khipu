@@ -3,8 +3,29 @@ import GLib from 'gi://GLib';
 import type { HistoryEntry, TextEntry, ImageEntry, FilesEntry } from './types.js';
 import { detectTextType } from './typeDetect.js';
 
+// GJS does not promisify these Gio.File methods by default — without this they
+// throw "Expected function for callback argument" when awaited. We use the
+// bytes variant of replace_contents to avoid the byte-array GC bug in the
+// plain replace_contents_async. Runs once per shell session (module is cached
+// across enable/disable), so no double-promisify concern.
+Gio._promisify(Gio.File.prototype, 'load_contents_async', 'load_contents_finish');
+Gio._promisify(Gio.File.prototype, 'replace_contents_bytes_async', 'replace_contents_finish');
+Gio._promisify(Gio.File.prototype, 'delete_async', 'delete_finish');
+
 const HISTORY_FILE_VERSION = 1;
 const SAVE_DEBOUNCE_MS = 400;
+
+// @girs types replace_contents_bytes_async as callback-only, but we promisify
+// it above — expose the Promise-returning shape for the call sites.
+type PromisifiedFile = {
+    replace_contents_bytes_async(
+        contents: GLib.Bytes,
+        etag: string | null,
+        makeBackup: boolean,
+        flags: Gio.FileCreateFlags,
+        cancellable: Gio.Cancellable | null,
+    ): Promise<[boolean, string]>;
+};
 
 const IMAGE_EXTENSIONS: Record<string, string> = {
     'image/png': 'png',
@@ -95,7 +116,8 @@ export class HistoryStore {
         const file = Gio.File.new_for_path(GLib.build_filenamev([this._imagesDir.get_path()!, `${id}.${ext}`]));
 
         try {
-            await file.replace_contents_async(bytes, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+            await (file as unknown as PromisifiedFile).replace_contents_bytes_async(
+                new GLib.Bytes(bytes), null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
         } catch (error) {
             console.error('clipboard-khipu: failed to write image entry', error);
             return;
@@ -209,9 +231,9 @@ export class HistoryStore {
 
     private _saveNow(): void {
         const payload: StoredFile = { version: HISTORY_FILE_VERSION, entries: this._entries };
-        const bytes = new TextEncoder().encode(JSON.stringify(payload));
-        this._historyFile
-            .replace_contents_async(bytes, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null)
+        const bytes = new GLib.Bytes(new TextEncoder().encode(JSON.stringify(payload)));
+        (this._historyFile as unknown as PromisifiedFile)
+            .replace_contents_bytes_async(bytes, null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null)
             .catch((error: unknown) => console.error('clipboard-khipu: failed to persist history', error));
     }
 }

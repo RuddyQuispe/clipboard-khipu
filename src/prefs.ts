@@ -82,7 +82,7 @@ function buildTerminalGroup(settings: Gio.Settings): Adw.PreferencesGroup {
 function buildShortcutGroup(settings: Gio.Settings): Adw.PreferencesGroup {
     const group = new Adw.PreferencesGroup({
         title: 'Shortcut',
-        description: 'GTK accelerator syntax, e.g. <Super>v or <Control><Alt>c',
+        description: 'GTK accelerator syntax, e.g. &lt;Super&gt;v or &lt;Control&gt;&lt;Alt&gt;c',
     });
 
     const row = new Adw.EntryRow({ title: 'Open history' });
