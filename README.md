@@ -1,5 +1,7 @@
 # clipboard-khipu
 
+*[Leer en español](README.es.md)*
+
 A developer-focused clipboard history for GNOME Shell — like the Windows `Super+V`
 clipboard stack, but native to GNOME and careful about formatting.
 
@@ -12,6 +14,7 @@ curl -fsSL https://raw.githubusercontent.com/RuddyQuispe/clipboard-khipu/master/
 ```
 
 This downloads the latest prebuilt release and installs it — no Node or build tools needed.
+To update to a newer release later, just run the same command again.
 
 If GNOME Shell doesn't pick it up immediately, log out and back in, then run:
 
@@ -141,6 +144,23 @@ clean Shell restart.
 
 > A nested-shell workflow (`scripts/run-nested.sh`) exists but relies on `gnome-shell --nested`,
 > which was **removed in GNOME 50**. On 50+ use the disable/enable or re-login loop above.
+
+### Update
+
+If you installed from source (not via `install.sh`), pulling new commits doesn't update the running
+extension by itself — `install-link` symlinks each `dist/*.js` file individually, so a fresh build
+still needs to be re-linked:
+
+```bash
+git pull
+npm install                # in case dependencies changed
+npm run build
+npm run compile-schemas
+npm run install-link       # safe to re-run any time, re-links new/changed files
+```
+
+Then reload the extension as in the [dev reload loop](#dev-reload-loop) above (disable/enable, or
+log out and back in on Wayland if that doesn't take).
 
 ### Verify
 
