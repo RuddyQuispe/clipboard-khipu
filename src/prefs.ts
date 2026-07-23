@@ -11,6 +11,7 @@ export default class ClipboardKhipuPreferences extends ExtensionPreferences {
         const page = new Adw.PreferencesPage({ title: 'Clipboard Khipu' });
 
         page.add(buildBehaviorGroup(settings));
+        page.add(buildFormatsGroup(settings));
         page.add(buildTerminalGroup(settings));
         page.add(buildShortcutGroup(settings));
         page.add(buildDataGroup());
@@ -56,6 +57,68 @@ function buildBehaviorGroup(settings: Gio.Settings): Adw.PreferencesGroup {
     return group;
 }
 
+const BYTES_PER_MIB = 1024 * 1024;
+
+function buildFormatsGroup(settings: Gio.Settings): Adw.PreferencesGroup {
+    const group = new Adw.PreferencesGroup({
+        title: 'Formats',
+        description:
+            'A copy from a spreadsheet, document or web page carries more than text — tables, ' +
+            'styles and colours travel as extra formats. Those are kept, and handed to the apps ' +
+            'listed below; everything else, including editors and terminals, receives plain text.',
+    });
+
+    const enabledRow = new Adw.SwitchRow({
+        title: 'Preserve formatting',
+        subtitle: 'Store HTML, RTF and app-specific formats alongside the text',
+    });
+    settings.bind('capture-formats', enabledRow, 'active', Gio.SettingsBindFlags.DEFAULT);
+    group.add(enabledRow);
+
+    group.add(buildTokenRow(settings, 'rich-text-wm-classes', 'Rich-text app hints'));
+
+    group.add(buildSizeRow(settings, 'flavor-max-bytes', 128, {
+        title: 'Maximum size per format (MiB)',
+        subtitle: 'Bigger formats are dropped, never truncated',
+    }));
+    group.add(buildSizeRow(settings, 'entry-max-bytes', 512, {
+        title: 'Maximum extra formats per item (MiB)',
+        subtitle: 'Total budget for one history item',
+    }));
+
+    return group;
+}
+
+/** Comma-separated editor for a GSettings string list. */
+function buildTokenRow(settings: Gio.Settings, key: string, title: string): Adw.EntryRow {
+    const row = new Adw.EntryRow({ title });
+    row.set_text(settings.get_strv(key).join(', '));
+    row.connect('changed', () => {
+        const tokens = row
+            .get_text()
+            .split(',')
+            .map(token => token.trim())
+            .filter(token => token.length > 0);
+        settings.set_strv(key, tokens);
+    });
+    return row;
+}
+
+/** GSettings stores bytes; the user thinks in MiB. */
+function buildSizeRow(
+    settings: Gio.Settings,
+    key: string,
+    maxMib: number,
+    labels: { title: string; subtitle: string }
+): Adw.SpinRow {
+    const row = Adw.SpinRow.new(Gtk.Adjustment.new(1, 1, maxMib, 1, 4, 0), 1, 0);
+    row.title = labels.title;
+    row.subtitle = labels.subtitle;
+    row.set_value(Math.max(1, Math.round(settings.get_int(key) / BYTES_PER_MIB)));
+    row.connect('notify::value', () => settings.set_int(key, row.get_value() * BYTES_PER_MIB));
+    return row;
+}
+
 function buildTerminalGroup(settings: Gio.Settings): Adw.PreferencesGroup {
     const group = new Adw.PreferencesGroup({
         title: 'Terminals',
@@ -64,18 +127,7 @@ function buildTerminalGroup(settings: Gio.Settings): Adw.PreferencesGroup {
             'Ctrl+Shift+V instead of Ctrl+V. Comma-separated, case-insensitive.',
     });
 
-    const row = new Adw.EntryRow({ title: 'Terminal hints' });
-    row.set_text(settings.get_strv('terminal-wm-classes').join(', '));
-    row.connect('changed', () => {
-        const tokens = row
-            .get_text()
-            .split(',')
-            .map(token => token.trim())
-            .filter(token => token.length > 0);
-        settings.set_strv('terminal-wm-classes', tokens);
-    });
-
-    group.add(row);
+    group.add(buildTokenRow(settings, 'terminal-wm-classes', 'Terminal hints'));
     return group;
 }
 
@@ -112,7 +164,7 @@ function buildDataGroup(): Adw.PreferencesGroup {
 
     const row = new Adw.ActionRow({
         title: 'Clear history',
-        subtitle: 'Deletes all stored entries and images from disk',
+        subtitle: 'Deletes all stored entries, images and formats from disk',
     });
 
     const button = Gtk.Button.new_with_label('Clear');
@@ -128,7 +180,6 @@ function buildDataGroup(): Adw.PreferencesGroup {
 function clearHistoryData(): void {
     const base = GLib.build_filenamev([GLib.get_user_data_dir(), 'clipboard-khipu']);
     const historyFile = Gio.File.new_for_path(GLib.build_filenamev([base, 'history.json']));
-    const imagesDir = Gio.File.new_for_path(GLib.build_filenamev([base, 'images']));
 
     try {
         if (historyFile.query_exists(null))
@@ -137,12 +188,19 @@ function clearHistoryData(): void {
         console.error('clipboard-khipu: failed to delete history.json', error);
     }
 
+    // `blobs` holds the stored rich formats — leaving it behind would keep the
+    // bulk of the data on disk after a "clear".
+    for (const name of ['images', 'blobs'])
+        emptyDirectory(Gio.File.new_for_path(GLib.build_filenamev([base, name])));
+}
+
+function emptyDirectory(dir: Gio.File): void {
     try {
-        const enumerator = imagesDir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
+        const enumerator = dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
         let info: Gio.FileInfo | null;
         while ((info = enumerator.next_file(null)) !== null)
-            imagesDir.get_child(info.get_name()).delete(null);
+            dir.get_child(info.get_name()).delete(null);
     } catch {
-        // Images directory does not exist yet — nothing to clean up.
+        // Directory does not exist yet — nothing to clean up.
     }
 }

@@ -34,10 +34,36 @@
       <description>Whether files copied in a file manager (e.g. Nautilus) are stored in history.</description>
     </key>
 
+    <key name="capture-formats" type="b">
+      <default>true</default>
+      <summary>Preserve formatting</summary>
+      <description>Store every format an app publishes (HTML, RTF, embedded objects) so pasting into a document keeps tables, styles and colours. Plain-text targets are unaffected.</description>
+    </key>
+
+    <key name="flavor-max-bytes" type="i">
+      <default>2097152</default>
+      <range min="65536" max="134217728"/>
+      <summary>Maximum size per format</summary>
+      <description>Formats larger than this are dropped rather than truncated. The item's own content is never subject to this limit.</description>
+    </key>
+
+    <key name="entry-max-bytes" type="i">
+      <default>8388608</default>
+      <range min="65536" max="536870912"/>
+      <summary>Maximum size of extra formats per item</summary>
+      <description>Total budget for the extra formats of a single history item.</description>
+    </key>
+
     <key name="exclude-passwords" type="b">
       <default>true</default>
       <summary>Exclude passwords</summary>
       <description>Skip clipboard content flagged as a password by the source application.</description>
+    </key>
+
+    <key name="rich-text-wm-classes" type="as">
+      <default>['libreoffice','soffice','onlyoffice','desktopeditors','wpsoffice','abiword','gnumeric','calligra','thunderbird','betterbird','evolution','geary','obsidian','joplin','logseq','anytype','softmaker','freeoffice','textmaker','planmaker']</default>
+      <summary>Rich-text window hints</summary>
+      <description>Windows whose WM class or app id contains any of these tokens (case-insensitive) receive the formatted representation (HTML or RTF) of an item instead of plain text.</description>
     </key>
 
     <key name="terminal-wm-classes" type="as">

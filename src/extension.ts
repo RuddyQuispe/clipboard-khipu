@@ -8,6 +8,7 @@ import { HistoryStore } from './historyStore.js';
 import { ClipboardMonitor } from './clipboardMonitor.js';
 import { openHistoryPopup } from './historyView.js';
 import { pasteEntry, destroyPaster } from './paster.js';
+import type { PasteTarget } from './paster.js';
 
 const KEYBINDING_NAME = 'open-history';
 
@@ -24,21 +25,30 @@ export default class ClipboardKhipuExtension extends Extension {
         const store = new HistoryStore(settings.get_int('history-size'));
         this._store = store;
 
-        const monitor = new ClipboardMonitor(payload => {
-            switch (payload.kind) {
-            case 'text':
-                store.addText(payload.text);
-                break;
-            case 'image':
-                if (settings.get_boolean('capture-images'))
-                    store.addImage(payload.mime, payload.bytes).catch(logError);
-                break;
-            case 'files':
-                if (settings.get_boolean('capture-files'))
-                    store.addFiles(payload.uris, payload.operation);
-                break;
-            }
-        });
+        const monitor = new ClipboardMonitor(
+            payload => {
+                switch (payload.kind) {
+                case 'text':
+                    store.addText(payload.text, payload.flavors).catch(logError);
+                    break;
+                case 'image':
+                    if (settings.get_boolean('capture-images'))
+                        store.addImage(payload.mime, payload.bytes, payload.flavors).catch(logError);
+                    break;
+                case 'files':
+                    if (settings.get_boolean('capture-files'))
+                        store.addFiles(payload.uris, payload.operation, payload.flavors).catch(logError);
+                    break;
+                }
+            },
+            // Read live, so changing the limits in preferences takes effect on
+            // the next copy without re-enabling the extension.
+            () => ({
+                captureFormats: settings.get_boolean('capture-formats'),
+                flavorMaxBytes: settings.get_int('flavor-max-bytes'),
+                entryMaxBytes: settings.get_int('entry-max-bytes'),
+            })
+        );
         this._monitor = monitor;
 
         store
@@ -95,31 +105,31 @@ export default class ClipboardKhipuExtension extends Extension {
         const autoPaste = settings.get_boolean('auto-paste');
         // Capture the paste target now, before the popup grabs input — focus
         // returns to this same window when the popup closes.
-        const pasteWithShift = this._targetIsTerminal(settings);
+        const target = this._pasteTarget(settings);
 
         if (entries.length === 1) {
-            pasteEntry(entries[0], monitor, autoPaste, pasteWithShift).catch(logError);
+            pasteEntry(entries[0], monitor, autoPaste, target).catch(logError);
             return;
         }
 
         openHistoryPopup(
             entries,
-            entry => {
-                pasteEntry(entry, monitor, autoPaste, pasteWithShift).catch(logError);
+            (entry, plainOnly) => {
+                pasteEntry(entry, monitor, autoPaste, target, plainOnly).catch(logError);
             },
             entry => store.remove(entry.id)
         );
     }
 
     /**
-     * True when the currently focused window looks like a terminal, based on
-     * the configurable `terminal-wm-classes` token list. Terminals paste with
-     * Ctrl+Shift+V rather than Ctrl+V.
+     * Classifies the window that is about to receive the paste, from the
+     * configurable WM-class token lists. Terminals paste with Ctrl+Shift+V
+     * rather than Ctrl+V; rich-text apps get the formatted representation.
      */
-    private _targetIsTerminal(settings: Gio.Settings): boolean {
+    private _pasteTarget(settings: Gio.Settings): PasteTarget {
         const window = global.display.get_focus_window();
         if (!window)
-            return false;
+            return { isTerminal: false, prefersRichText: false };
 
         const ids = [
             window.get_wm_class(),
@@ -129,10 +139,18 @@ export default class ClipboardKhipuExtension extends Extension {
             .filter((id): id is string => typeof id === 'string')
             .map(id => id.toLowerCase());
         if (ids.length === 0)
-            return false;
+            return { isTerminal: false, prefersRichText: false };
 
-        const tokens = settings.get_strv('terminal-wm-classes').map(token => token.toLowerCase());
-        return tokens.some(token => token.length > 0 && ids.some(id => id.includes(token)));
+        const matches = (key: string): boolean =>
+            settings
+                .get_strv(key)
+                .map(token => token.toLowerCase())
+                .some(token => token.length > 0 && ids.some(id => id.includes(token)));
+
+        return {
+            isTerminal: matches('terminal-wm-classes'),
+            prefersRichText: matches('rich-text-wm-classes'),
+        };
     }
 }
 

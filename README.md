@@ -36,6 +36,31 @@ If there's only **one** item in history, `Super+V` pastes it immediately — no 
 Pasting is **terminal-aware**: in a normal app it sends `Ctrl+V`, and in a terminal it sends
 `Ctrl+Shift+V` (see [Terminals](#terminals)).
 
+## Formatting is preserved
+
+Copying is never just text. A range of cells from LibreOffice Calc also carries the table, the
+colours and the cell styles; a snippet from a web page carries its bold, links and headings. Those
+travel as extra *formats* alongside the plain text, and the app you paste into picks the richest
+one it understands.
+
+clipboard-khipu stores **all** of them, and hands over the formatted one when the app you're
+pasting into is a word processor, spreadsheet or mail client:
+
+- Calc → Writer pastes the **whole table**, colours and cell styles included.
+- A styled selection from a browser or a syntax-highlighted editor keeps its styling in a document.
+- Everywhere else — terminals, code editors, and any app not on the list — you get plain text.
+
+Items carrying formatting are labelled `html`, `rtf` or `formatted` in the list. Press
+**`Ctrl+Enter`** instead of `Enter` to force plain text even in a rich-text app.
+
+If your office suite or mail client doesn't get the formatting, add its window class under
+**Preferences → Formats → Rich-text app hints**.
+
+> **Why a list instead of just always sending the formatting?** GNOME lets an extension publish
+> only *one* format at a time on the clipboard, so clipboard-khipu has to pick. Sending HTML to an
+> app that only understands plain text would paste **nothing at all** — so anything not recognised
+> as a rich-text app deliberately gets the plain version.
+
 ## Shortcuts
 
 Everything is keyboard-driven. Once the popup is open:
@@ -46,6 +71,7 @@ Everything is keyboard-driven. Once the popup is open:
 | `↑` / `↓` | Move the selection |
 | *type anything* | Filter the list |
 | `Enter` | Paste the selected entry |
+| `Ctrl+Enter` | Paste the selected entry as plain text (drops the formatting) |
 | `Shift+Delete` | Remove the selected entry from history |
 | `Esc` | Close the popup |
 | Click a row | Paste that entry |
@@ -72,10 +98,12 @@ gnome-extensions prefs clipboard-khipu@ruddy.local
 - **History size** — how many entries to keep (default 25).
 - **Auto-paste on select** — paste immediately after picking, or just put it on the clipboard.
 - **Capture images / files** — toggle per content type.
+- **Preserve formatting** — keep the HTML/RTF/app-specific formats of a copy (on by default), which
+  apps receive them, and size limits for how much to store.
 - **Exclude passwords** — skip content flagged as a password by its source app.
 - **Terminal hints** — window classes that should paste with `Ctrl+Shift+V`.
 - **Shortcut** — rebind the open-history key.
-- **Clear history** — wipe all stored entries and images.
+- **Clear history** — wipe all stored entries, images and formats.
 
 ## Compatibility
 
@@ -97,7 +125,7 @@ that range.
 ## Privacy
 
 History is stored locally in `~/.local/share/clipboard-khipu/` (metadata in `history.json`,
-images under `images/`). Nothing leaves your machine. You can wipe it any time from the
+images under `images/`, stored formats under `blobs/`). Nothing leaves your machine. You can wipe it any time from the
 preferences window ("Clear history"), and content marked as a password is never recorded.
 
 ## Contributing

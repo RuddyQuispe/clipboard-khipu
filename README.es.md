@@ -40,6 +40,33 @@ Si solo hay **un** elemento en el historial, `Super+V` lo pega de inmediato — 
 Pegar es **consciente de la terminal**: en una app normal envía `Ctrl+V`, y en una terminal envía
 `Ctrl+Shift+V` (ver [Terminales](#terminales)).
 
+## El formato se conserva
+
+Copiar nunca es solo texto. Un rango de celdas de LibreOffice Calc lleva además la tabla, los
+colores y los estilos de celda; un fragmento de una página web lleva sus negritas, enlaces y
+títulos. Todo eso viaja como *formatos* adicionales junto al texto plano, y la app donde pegás
+elige el más rico que sepa interpretar.
+
+clipboard-khipu guarda **todos**, y entrega el formateado cuando la app donde pegás es un
+procesador de texto, una planilla o un cliente de correo:
+
+- Calc → Writer pega la **tabla completa**, con colores y estilos de celda.
+- Una selección con estilos desde el navegador o un editor con resaltado mantiene su formato
+  dentro de un documento.
+- En todo lo demás — terminales, editores de código, y cualquier app fuera de la lista — recibís
+  texto plano.
+
+Los elementos con formato aparecen etiquetados como `html`, `rtf` o `formatted`. Presioná
+**`Ctrl+Enter`** en lugar de `Enter` para forzar texto plano incluso en una app con formato.
+
+Si tu suite de oficina o cliente de correo no recibe el formato, agregá su clase de ventana en
+**Preferencias → Formatos → Pistas de apps con formato**.
+
+> **¿Por qué una lista y no mandar siempre el formato?** GNOME permite que una extensión publique
+> solo *un* formato a la vez en el portapapeles, así que clipboard-khipu tiene que elegir. Mandarle
+> HTML a una app que solo entiende texto plano haría que **no se pegue nada** — por eso todo lo que
+> no está reconocido como app con formato recibe la versión plana a propósito.
+
 ## Atajos
 
 Todo se maneja con el teclado. Una vez abierto el popup:
@@ -50,6 +77,7 @@ Todo se maneja con el teclado. Una vez abierto el popup:
 | `↑` / `↓` | Mover la selección |
 | *escribir algo* | Filtrar la lista |
 | `Enter` | Pegar el elemento seleccionado |
+| `Ctrl+Enter` | Pegar el elemento seleccionado como texto plano (descarta el formato) |
 | `Shift+Delete` | Eliminar el elemento seleccionado del historial |
 | `Esc` | Cerrar el popup |
 | Clic en una fila | Pegar ese elemento |
@@ -78,10 +106,12 @@ gnome-extensions prefs clipboard-khipu@ruddy.local
 - **Tamaño del historial** — cuántos elementos guardar (25 por defecto).
 - **Auto-pegar al seleccionar** — pegar de inmediato al elegir, o solo ponerlo en el portapapeles.
 - **Capturar imágenes / archivos** — activar o desactivar por tipo de contenido.
+- **Conservar el formato** — guarda los formatos HTML/RTF/propios de cada app (activado por
+  defecto), qué apps los reciben, y límites de tamaño para cuánto guardar.
 - **Excluir contraseñas** — omite contenido marcado como contraseña por la app de origen.
 - **Pistas de terminal** — clases de ventana que deben pegar con `Ctrl+Shift+V`.
 - **Atajo** — reasignar la tecla que abre el historial.
-- **Limpiar historial** — borra todos los elementos e imágenes guardadas.
+- **Limpiar historial** — borra todos los elementos, imágenes y formatos guardados.
 
 ## Compatibilidad
 
@@ -103,7 +133,8 @@ estable en ese rango.
 ## Privacidad
 
 El historial se guarda localmente en `~/.local/share/clipboard-khipu/` (los metadatos en
-`history.json`, las imágenes en `images/`). Nada sale de tu máquina. Puedes borrarlo cuando quieras
+`history.json`, las imágenes en `images/`, los formatos guardados en `blobs/`). Nada sale de tu
+máquina. Puedes borrarlo cuando quieras
 desde la ventana de preferencias ("Limpiar historial"), y el contenido marcado como contraseña
 nunca se guarda.
 

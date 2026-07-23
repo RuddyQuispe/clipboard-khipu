@@ -12,7 +12,8 @@ const SEARCH_ROW_HEIGHT = 44;
 const FOOTER_ROW_HEIGHT = 30;
 const PREVIEW_MAX_LENGTH = 160;
 
-export type HistorySelectHandler = (entry: HistoryEntry) => void;
+/** `plainOnly` drops the stored rich flavors, pasting the bare text instead. */
+export type HistorySelectHandler = (entry: HistoryEntry, plainOnly: boolean) => void;
 export type HistoryDeleteHandler = (entry: HistoryEntry) => void;
 
 interface Row {
@@ -81,7 +82,7 @@ class HistoryPopup {
         this._container.add_child(
             new St.Label({
                 style_class: 'khipu-footer',
-                text: '↑↓ navigate · Enter paste · Shift+Del remove · Esc close',
+                text: '↑↓ navigate · Enter paste · Ctrl+Enter plain · Shift+Del remove · Esc close',
             })
         );
         // Swallow clicks inside the box so they never reach the backdrop below.
@@ -161,7 +162,7 @@ class HistoryPopup {
         row.add_child(textBox);
 
         row.connect('button-press-event', () => {
-            this._activate(entry);
+            this._activate(entry, false);
             return Clutter.EVENT_STOP;
         });
 
@@ -191,7 +192,9 @@ class HistoryPopup {
         case Clutter.KEY_Return:
         case Clutter.KEY_KP_Enter:
         case Clutter.KEY_ISO_Enter:
-            this._activateSelected();
+            // Ctrl+Enter forces a plain-text paste, for when the target app
+            // would otherwise pick up the copied formatting.
+            this._activateSelected((event.get_state() & Clutter.ModifierType.CONTROL_MASK) !== 0);
             return Clutter.EVENT_STOP;
         case Clutter.KEY_Delete:
             // Shift+Delete removes the selected entry; plain Delete stays with
@@ -253,15 +256,15 @@ class HistoryPopup {
             adjustment.value = rowBottom - viewHeight;
     }
 
-    private _activateSelected(): void {
+    private _activateSelected(plainOnly: boolean): void {
         const row = this._rows[this._selectedIndex];
         if (row)
-            this._activate(row.entry);
+            this._activate(row.entry, plainOnly);
     }
 
-    private _activate(entry: HistoryEntry): void {
+    private _activate(entry: HistoryEntry, plainOnly: boolean): void {
         this._close();
-        this._onSelect(entry);
+        this._onSelect(entry, plainOnly);
     }
 }
 
@@ -295,14 +298,29 @@ function previewFor(entry: HistoryEntry): string {
 
 function metaFor(entry: HistoryEntry): string {
     const when = formatRelativeTime(entry.createdAt);
+    const format = formatBadge(entry);
+
     switch (entry.kind) {
     case 'text':
-        return `${entry.detectedType} · ${when}`;
+        return `${entry.detectedType}${format} · ${when}`;
     case 'image':
-        return `image · ${when}`;
+        return `image${format} · ${when}`;
     case 'files':
-        return `${entry.uris.length} file${entry.uris.length === 1 ? '' : 's'} · ${when}`;
+        return `${entry.uris.length} file${entry.uris.length === 1 ? '' : 's'}${format} · ${when}`;
     }
+}
+
+/** Tells the user this entry carries formatting, and roughly of what kind. */
+function formatBadge(entry: HistoryEntry): string {
+    if (entry.flavors.length === 0)
+        return '';
+
+    const mimes = entry.flavors.map(flavor => flavor.mime);
+    if (mimes.includes('text/html'))
+        return ' · html';
+    if (mimes.some(mime => mime === 'text/rtf' || mime === 'application/rtf'))
+        return ' · rtf';
+    return ' · formatted';
 }
 
 function iconForEntry(entry: HistoryEntry): Gio.Icon {
