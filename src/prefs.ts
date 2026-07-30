@@ -12,6 +12,7 @@ export default class ClipboardKhipuPreferences extends ExtensionPreferences {
 
         page.add(buildBehaviorGroup(settings));
         page.add(buildFormatsGroup(settings));
+        page.add(buildFilesGroup(settings));
         page.add(buildTerminalGroup(settings));
         page.add(buildShortcutGroup(settings));
         page.add(buildDataGroup());
@@ -86,6 +87,20 @@ function buildFormatsGroup(settings: Gio.Settings): Adw.PreferencesGroup {
         subtitle: 'Total budget for one history item',
     }));
 
+    return group;
+}
+
+function buildFilesGroup(settings: Gio.Settings): Adw.PreferencesGroup {
+    const group = new Adw.PreferencesGroup({
+        title: 'Files',
+        description:
+            'Pasting a copied file into one of the file managers listed below copies or moves it, ' +
+            'as it would in the file manager itself. Everywhere else — web inputs, chat boxes, ' +
+            'editors — the file arrives as its path, which is what a text input can accept. ' +
+            'Comma-separated, case-insensitive.',
+    });
+
+    group.add(buildTokenRow(settings, 'file-manager-wm-classes', 'File manager hints'));
     return group;
 }
 

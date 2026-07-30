@@ -66,6 +66,12 @@
       <description>Windows whose WM class or app id contains any of these tokens (case-insensitive) receive the formatted representation (HTML or RTF) of an item instead of plain text.</description>
     </key>
 
+    <key name="file-manager-wm-classes" type="as">
+      <default>['nautilus','org.gnome.files','nemo','caja','thunar','dolphin','pcmanfm','krusader','doublecmd','spacefm','dde-file-manager','io.elementary.files']</default>
+      <summary>File manager window hints</summary>
+      <description>Windows whose WM class or app id contains any of these tokens (case-insensitive) receive a copied file as the file itself, so pasting into a directory copies or moves it. Every other window receives the file's path as text, which is all an ordinary input can accept.</description>
+    </key>
+
     <key name="terminal-wm-classes" type="as">
       <default>['terminal','konsole','kitty','alacritty','foot','wezterm','xterm','terminator','tilix','console','kgx','ptyxis','ghostty','rio','contour','yakuake','guake','st-256color','urxvt','blackbox']</default>
       <summary>Terminal window hints</summary>

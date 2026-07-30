@@ -61,6 +61,20 @@ If your office suite or mail client doesn't get the formatting, add its window c
 > app that only understands plain text would paste **nothing at all** — so anything not recognised
 > as a rich-text app deliberately gets the plain version.
 
+## Files adapt to where you paste them
+
+A copied file has no single right form either, so the destination decides:
+
+- **A file manager** — the file is copied or moved, exactly as if you had pasted in Nautilus.
+- **A document or mail client** — a lone image lands embedded; several files land as a file list.
+- **A terminal** — the bare path.
+- **Anywhere else** (web inputs, chat boxes, editors) — the **path as text**, one per line. It's the
+  only thing an ordinary input can accept: the file formats are understood by file managers alone,
+  and sending one to a text field would paste nothing at all.
+
+If pasting into your file manager gives you the path instead of the file, add its window class under
+**Preferences → Files → File manager hints**.
+
 ## Shortcuts
 
 Everything is keyboard-driven. Once the popup is open:
@@ -101,6 +115,7 @@ gnome-extensions prefs clipboard-khipu@ruddy.local
 - **Preserve formatting** — keep the HTML/RTF/app-specific formats of a copy (on by default), which
   apps receive them, and size limits for how much to store.
 - **Exclude passwords** — skip content flagged as a password by its source app.
+- **File manager hints** — window classes that receive a copied file as the file itself.
 - **Terminal hints** — window classes that should paste with `Ctrl+Shift+V`.
 - **Shortcut** — rebind the open-history key.
 - **Clear history** — wipe all stored entries, images and formats.

@@ -28,6 +28,8 @@ export interface PasteTarget {
     isTerminal: boolean;
     /** Word processors, spreadsheets and mail clients keep HTML/RTF formatting. */
     prefersRichText: boolean;
+    /** File managers are the only target that understands a copy/cut file grab. */
+    isFileManager: boolean;
 }
 
 let virtualKeyboard: Clutter.VirtualInputDevice | null = null;
@@ -114,11 +116,23 @@ function imageMimeForPath(path: string): string | null {
     return contentType.startsWith('image/') ? contentType : null;
 }
 
+/** The files as local paths, one per line; a URI with no local path stays a URI. */
+function plainPathsOf(entry: FilesEntry): string {
+    return entry.uris.map(uri => uriToPath(uri) ?? uri).join('\n');
+}
+
 /**
  * A file list has no single "correct" representation: Nautilus wants
  * x-special/gnome-copied-files, a document wants the picture itself, a terminal
  * wants the path. Since only one mimetype can be advertised per grab, the
  * target window decides which one it gets.
+ *
+ * An unrecognized window gets the paths as text, because both file formats paste
+ * as nothing into an ordinary input: x-special/gnome-copied-files is private to
+ * GNOME Files, and text/uri-list is not among the targets a text entry asks for.
+ * The cost is that a browser upload widget reading text/uri-list receives the
+ * path as text rather than the file — with one mimetype per grab the two cannot
+ * both be served, and such a drop area is indistinguishable from a text input.
  */
 async function applyFiles(
     entry: FilesEntry,
@@ -131,9 +145,18 @@ async function applyFiles(
     // Terminals only take text, and Ctrl+Enter is the user saying the same
     // thing about any other app: give me the bare paths.
     if (target.isTerminal || plainOnly) {
-        const paths = entry.uris.map(uri => uriToPath(uri) ?? uri);
         monitor.suppressNextChange();
-        clipboard.set_text(St.ClipboardType.CLIPBOARD, paths.join('\n'));
+        clipboard.set_text(St.ClipboardType.CLIPBOARD, plainPathsOf(entry));
+        return;
+    }
+
+    // The only format that round-trips a copy/cut operation, and the only one a
+    // file manager acts on: pasting it into a directory moves or copies the file.
+    if (target.isFileManager) {
+        const payload = `${entry.operation}\n${entry.uris.join('\n')}`;
+        monitor.suppressNextChange();
+        clipboard.set_content(St.ClipboardType.CLIPBOARD, FILES_MIME,
+            new TextEncoder().encode(payload));
         return;
     }
 
@@ -155,10 +178,10 @@ async function applyFiles(
         return;
     }
 
-    // File managers: the only format that round-trips a copy/cut operation.
-    const payload = `${entry.operation}\n${entry.uris.join('\n')}`;
+    // Every other window — web inputs, chat boxes, editors, dialogs — is only
+    // known to accept text, so it gets the paths.
     monitor.suppressNextChange();
-    clipboard.set_content(St.ClipboardType.CLIPBOARD, FILES_MIME, new TextEncoder().encode(payload));
+    clipboard.set_text(St.ClipboardType.CLIPBOARD, plainPathsOf(entry));
 }
 
 /** The picture behind a file:// URI, or null if it is not one or is gone. */

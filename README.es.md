@@ -67,6 +67,22 @@ Si tu suite de oficina o cliente de correo no recibe el formato, agregá su clas
 > HTML a una app que solo entiende texto plano haría que **no se pegue nada** — por eso todo lo que
 > no está reconocido como app con formato recibe la versión plana a propósito.
 
+## Los archivos se adaptan a dónde los pegás
+
+Un archivo copiado tampoco tiene una única forma correcta, así que decide el destino:
+
+- **Un gestor de archivos** — el archivo se copia o se mueve, igual que si hubieras pegado en
+  Nautilus.
+- **Un documento o cliente de correo** — una imagen sola queda incrustada; varios archivos llegan
+  como lista de archivos.
+- **Una terminal** — la ruta pelada.
+- **Cualquier otro lugar** (campos web, chats, editores) — la **ruta como texto**, una por línea. Es
+  lo único que un input común puede aceptar: los formatos de archivo los entienden solo los gestores
+  de archivos, y mandarle uno a un campo de texto haría que no se pegue nada.
+
+Si al pegar en tu gestor de archivos recibís la ruta en lugar del archivo, agregá su clase de
+ventana en **Preferencias → Archivos → Pistas de gestor de archivos**.
+
 ## Atajos
 
 Todo se maneja con el teclado. Una vez abierto el popup:
@@ -109,6 +125,7 @@ gnome-extensions prefs clipboard-khipu@ruddy.local
 - **Conservar el formato** — guarda los formatos HTML/RTF/propios de cada app (activado por
   defecto), qué apps los reciben, y límites de tamaño para cuánto guardar.
 - **Excluir contraseñas** — omite contenido marcado como contraseña por la app de origen.
+- **Pistas de gestor de archivos** — clases de ventana que reciben un archivo copiado como archivo.
 - **Pistas de terminal** — clases de ventana que deben pegar con `Ctrl+Shift+V`.
 - **Atajo** — reasignar la tecla que abre el historial.
 - **Limpiar historial** — borra todos los elementos, imágenes y formatos guardados.
