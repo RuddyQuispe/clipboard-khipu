@@ -125,14 +125,16 @@ export default class ClipboardKhipuExtension extends Extension {
      * Classifies the window that is about to receive the paste, from the
      * configurable WM-class token lists. Terminals paste with Ctrl+Shift+V
      * rather than Ctrl+V; rich-text apps get the formatted representation; file
-     * managers get the file grab itself. Anything unmatched is treated as a
-     * plain-text target, which is all an unknown window is known to accept.
+     * managers get the file grab itself; browsers and web chat clients get a
+     * copied file as a URI list so it uploads. Anything unmatched is treated as
+     * a plain-text target, which is all an unknown window is known to accept.
      */
     private _pasteTarget(settings: Gio.Settings): PasteTarget {
         const unknown: PasteTarget = {
             isTerminal: false,
             prefersRichText: false,
             isFileManager: false,
+            acceptsFileDrop: false,
         };
 
         const window = global.display.get_focus_window();
@@ -159,6 +161,7 @@ export default class ClipboardKhipuExtension extends Extension {
             isTerminal: matches('terminal-wm-classes'),
             prefersRichText: matches('rich-text-wm-classes'),
             isFileManager: matches('file-manager-wm-classes'),
+            acceptsFileDrop: matches('file-drop-wm-classes'),
         };
     }
 }

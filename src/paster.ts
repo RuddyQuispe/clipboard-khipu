@@ -30,6 +30,11 @@ export interface PasteTarget {
     prefersRichText: boolean;
     /** File managers are the only target that understands a copy/cut file grab. */
     isFileManager: boolean;
+    /**
+     * Browsers and web chat clients take a file through the same paste handler a
+     * drop would use, so they get the URI list and the file uploads.
+     */
+    acceptsFileDrop: boolean;
 }
 
 let virtualKeyboard: Clutter.VirtualInputDevice | null = null;
@@ -122,6 +127,16 @@ function plainPathsOf(entry: FilesEntry): string {
 }
 
 /**
+ * Publishes the files as a URI list — the format a browser reads to fill
+ * DataTransfer.files on paste, and what apps accepting file drops ask for.
+ */
+function setUriList(clipboard: St.Clipboard, monitor: ClipboardMonitor, entry: FilesEntry): void {
+    monitor.suppressNextChange();
+    clipboard.set_content(St.ClipboardType.CLIPBOARD, URI_LIST_MIME,
+        new TextEncoder().encode(`${entry.uris.join('\r\n')}\r\n`));
+}
+
+/**
  * A file list has no single "correct" representation: Nautilus wants
  * x-special/gnome-copied-files, a document wants the picture itself, a terminal
  * wants the path. Since only one mimetype can be advertised per grab, the
@@ -130,9 +145,12 @@ function plainPathsOf(entry: FilesEntry): string {
  * An unrecognized window gets the paths as text, because both file formats paste
  * as nothing into an ordinary input: x-special/gnome-copied-files is private to
  * GNOME Files, and text/uri-list is not among the targets a text entry asks for.
- * The cost is that a browser upload widget reading text/uri-list receives the
- * path as text rather than the file — with one mimetype per grab the two cannot
- * both be served, and such a drop area is indistinguishable from a text input.
+ *
+ * Browsers and web chat clients are the exception: a page that accepts a pasted
+ * file reads text/uri-list, so they are classified separately and get that. The
+ * cost is the mirror image of the default — a plain text field inside one of
+ * those apps receives nothing, since a drop area and a text input cannot be told
+ * apart from outside the window. Ctrl+Enter forces the bare paths anywhere.
  */
 async function applyFiles(
     entry: FilesEntry,
@@ -160,6 +178,15 @@ async function applyFiles(
         return;
     }
 
+    // A web page accepts a pasted file the same way it accepts a dropped one, so
+    // the URI list is what makes the upload happen. Always the list, never the
+    // picture's own bytes: attaching the real file keeps its name, where an
+    // embedded image would arrive as an anonymous blob.
+    if (target.acceptsFileDrop) {
+        setUriList(clipboard, monitor, entry);
+        return;
+    }
+
     if (target.prefersRichText) {
         // A word processor cannot do anything with a file reference, so a lone
         // picture is handed over as its own bytes and lands embedded. Only one
@@ -172,13 +199,11 @@ async function applyFiles(
             return;
         }
 
-        monitor.suppressNextChange();
-        clipboard.set_content(St.ClipboardType.CLIPBOARD, URI_LIST_MIME,
-            new TextEncoder().encode(`${entry.uris.join('\r\n')}\r\n`));
+        setUriList(clipboard, monitor, entry);
         return;
     }
 
-    // Every other window — web inputs, chat boxes, editors, dialogs — is only
+    // Every other window — editors, dialogs, anything unrecognized — is only
     // known to accept text, so it gets the paths.
     monitor.suppressNextChange();
     clipboard.set_text(St.ClipboardType.CLIPBOARD, plainPathsOf(entry));

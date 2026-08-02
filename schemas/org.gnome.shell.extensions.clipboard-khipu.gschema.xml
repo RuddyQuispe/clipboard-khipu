@@ -72,6 +72,12 @@
       <description>Windows whose WM class or app id contains any of these tokens (case-insensitive) receive a copied file as the file itself, so pasting into a directory copies or moves it. Every other window receives the file's path as text, which is all an ordinary input can accept.</description>
     </key>
 
+    <key name="file-drop-wm-classes" type="as">
+      <default>['firefox','librewolf','waterfox','floorp','zen-browser','chromium','google-chrome','brave-browser','vivaldi','opera','microsoft-edge','epiphany','org.gnome.epiphany','slack','discord','org.telegram.desktop','signal','io.element.desktop','whatsapp']</default>
+      <summary>File upload window hints</summary>
+      <description>Windows whose WM class or app id contains any of these tokens (case-insensitive) receive a copied file as a URI list, which is what a browser reads to attach the file on paste. Pasting into a plain text field of such an app inserts nothing; use Ctrl+Enter there to paste the path instead.</description>
+    </key>
+
     <key name="terminal-wm-classes" type="as">
       <default>['terminal','konsole','kitty','alacritty','foot','wezterm','xterm','terminator','tilix','console','kgx','ptyxis','ghostty','rio','contour','yakuake','guake','st-256color','urxvt','blackbox']</default>
       <summary>Terminal window hints</summary>

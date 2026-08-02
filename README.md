@@ -66,14 +66,25 @@ If your office suite or mail client doesn't get the formatting, add its window c
 A copied file has no single right form either, so the destination decides:
 
 - **A file manager** — the file is copied or moved, exactly as if you had pasted in Nautilus.
+- **A browser or chat client** — the file itself, ready to upload, the same way dropping it would
+  attach it. Paste into Gmail, Slack or a chat box and the file goes up, not its path.
 - **A document or mail client** — a lone image lands embedded; several files land as a file list.
 - **A terminal** — the bare path.
-- **Anywhere else** (web inputs, chat boxes, editors) — the **path as text**, one per line. It's the
-  only thing an ordinary input can accept: the file formats are understood by file managers alone,
-  and sending one to a text field would paste nothing at all.
+- **Anywhere else** (editors, dialogs) — the **path as text**, one per line. It's the only thing an
+  ordinary input can accept: the file formats are understood by file managers alone, and sending one
+  to a text field would paste nothing at all.
+
+Press **Ctrl+Enter** to get the bare path anywhere, including inside a browser — useful when the
+field you are filling in wants text rather than a file.
+
+> [!NOTE]
+> Uploading works on pages that handle a paste, which is most chat boxes and compose windows. A bare
+> **Choose file** button cannot be pasted into at all — no browser supports it — so use its file
+> picker, or drag the file in.
 
 If pasting into your file manager gives you the path instead of the file, add its window class under
-**Preferences → Files → File manager hints**.
+**Preferences → Files → File manager hints**; if a browser or chat app pastes the path instead of
+uploading, add it under **File upload hints**.
 
 ## Shortcuts
 
@@ -116,6 +127,7 @@ gnome-extensions prefs clipboard-khipu@ruddy.local
   apps receive them, and size limits for how much to store.
 - **Exclude passwords** — skip content flagged as a password by its source app.
 - **File manager hints** — window classes that receive a copied file as the file itself.
+- **File upload hints** — window classes that receive a copied file as a file to attach.
 - **Terminal hints** — window classes that should paste with `Ctrl+Shift+V`.
 - **Shortcut** — rebind the open-history key.
 - **Clear history** — wipe all stored entries, images and formats.

@@ -73,15 +73,26 @@ Un archivo copiado tampoco tiene una única forma correcta, así que decide el d
 
 - **Un gestor de archivos** — el archivo se copia o se mueve, igual que si hubieras pegado en
   Nautilus.
+- **Un navegador o cliente de chat** — el archivo mismo, listo para subir, igual que si lo hubieras
+  arrastrado. Pegá en Gmail, Slack o un chat y sube el archivo, no su ruta.
 - **Un documento o cliente de correo** — una imagen sola queda incrustada; varios archivos llegan
   como lista de archivos.
 - **Una terminal** — la ruta pelada.
-- **Cualquier otro lugar** (campos web, chats, editores) — la **ruta como texto**, una por línea. Es
-  lo único que un input común puede aceptar: los formatos de archivo los entienden solo los gestores
-  de archivos, y mandarle uno a un campo de texto haría que no se pegue nada.
+- **Cualquier otro lugar** (editores, diálogos) — la **ruta como texto**, una por línea. Es lo único
+  que un input común puede aceptar: los formatos de archivo los entienden solo los gestores de
+  archivos, y mandarle uno a un campo de texto haría que no se pegue nada.
+
+Apretá **Ctrl+Enter** para obtener la ruta pelada en cualquier lado, incluso dentro de un navegador
+— útil cuando el campo que estás llenando espera texto y no un archivo.
+
+> [!NOTE]
+> La subida funciona en páginas que manejan el pegado, que son la mayoría de los chats y ventanas de
+> redacción. En un botón **Elegir archivo** pelado no se puede pegar — ningún navegador lo soporta —
+> así que usá su selector de archivos, o arrastrá el archivo.
 
 Si al pegar en tu gestor de archivos recibís la ruta en lugar del archivo, agregá su clase de
-ventana en **Preferencias → Archivos → Pistas de gestor de archivos**.
+ventana en **Preferencias → Archivos → Pistas de gestor de archivos**; si un navegador o app de chat
+pega la ruta en vez de subir el archivo, agregala en **Pistas de subida de archivos**.
 
 ## Atajos
 
@@ -126,6 +137,7 @@ gnome-extensions prefs clipboard-khipu@ruddy.local
   defecto), qué apps los reciben, y límites de tamaño para cuánto guardar.
 - **Excluir contraseñas** — omite contenido marcado como contraseña por la app de origen.
 - **Pistas de gestor de archivos** — clases de ventana que reciben un archivo copiado como archivo.
+- **Pistas de subida de archivos** — clases de ventana que reciben un archivo copiado para adjuntar.
 - **Pistas de terminal** — clases de ventana que deben pegar con `Ctrl+Shift+V`.
 - **Atajo** — reasignar la tecla que abre el historial.
 - **Limpiar historial** — borra todos los elementos, imágenes y formatos guardados.

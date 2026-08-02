@@ -95,12 +95,14 @@ function buildFilesGroup(settings: Gio.Settings): Adw.PreferencesGroup {
         title: 'Files',
         description:
             'Pasting a copied file into one of the file managers listed below copies or moves it, ' +
-            'as it would in the file manager itself. Everywhere else — web inputs, chat boxes, ' +
-            'editors — the file arrives as its path, which is what a text input can accept. ' +
+            'as it would in the file manager itself. The apps under upload hints receive it as a ' +
+            'file to attach, the way a drop would. Everywhere else — editors, dialogs, terminals — ' +
+            'the file arrives as its path, which is what a text input can accept. ' +
             'Comma-separated, case-insensitive.',
     });
 
     group.add(buildTokenRow(settings, 'file-manager-wm-classes', 'File manager hints'));
+    group.add(buildTokenRow(settings, 'file-drop-wm-classes', 'File upload hints'));
     return group;
 }
 
