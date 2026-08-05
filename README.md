@@ -19,7 +19,7 @@ To update to a newer release later, just run the same command again.
 If GNOME Shell doesn't pick it up immediately, log out and back in, then run:
 
 ```bash
-gnome-extensions enable clipboard-khipu@ruddy.local
+gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
 ```
 
 > Prefer to build it yourself? See [Contributing](#contributing) for the from-source install.
@@ -117,7 +117,7 @@ the preferences and add its WM class to **Terminals → Terminal hints** (comma-
 ## Preferences
 
 ```bash
-gnome-extensions prefs clipboard-khipu@ruddy.local
+gnome-extensions prefs clipboard-khipu@ruddyquispe.github.io
 ```
 
 - **History size** — how many entries to keep (default 25).
@@ -190,8 +190,8 @@ npm run install-link     # symlink dist/ + schemas/ + metadata into the extensio
 After rebuilding, reload the extension so GNOME Shell picks up the new code:
 
 ```bash
-gnome-extensions disable clipboard-khipu@ruddy.local
-gnome-extensions enable  clipboard-khipu@ruddy.local
+gnome-extensions disable clipboard-khipu@ruddyquispe.github.io
+gnome-extensions enable  clipboard-khipu@ruddyquispe.github.io
 ```
 
 On Wayland, if a disable/enable doesn't take (GJS caches ES modules), log out and back in for a

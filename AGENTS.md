@@ -97,7 +97,7 @@ npm run install-link     # symlink into ~/.local/share/gnome-shell/extensions/
 npx tsc --noEmit         # strict typecheck — the primary automated gate
 ```
 
-Reload after a build with `gnome-extensions disable/enable clipboard-khipu@ruddy.local`; on
+Reload after a build with `gnome-extensions disable/enable clipboard-khipu@ruddyquispe.github.io`; on
 Wayland a re-login guarantees a clean Shell restart. There is **no automated test suite** — the
 typecheck plus a manual QA pass is the current safety net.
 

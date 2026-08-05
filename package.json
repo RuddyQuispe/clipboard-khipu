@@ -1,5 +1,6 @@
 {
   "name": "clipboard-khipu",
+  "license": "MIT",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +11,8 @@
     "compile-schemas": "glib-compile-schemas schemas/",
     "install-link": "bash scripts/install-link.sh",
     "nested": "bash scripts/run-nested.sh",
-    "pack": "npm run build && npm run compile-schemas"
+    "pack": "npm run build && npm run compile-schemas",
+    "pack:ego": "bash scripts/pack-ego.sh"
   },
   "devDependencies": {
     "@girs/gjs": "4.1.0",

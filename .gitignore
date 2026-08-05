@@ -1,5 +1,6 @@
 node_modules/
 dist/
+build/
 schemas/gschemas.compiled
 *.tgz
 .atl/

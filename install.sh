@@ -11,7 +11,7 @@
 set -euo pipefail
 
 REPO="RuddyQuispe/clipboard-khipu"
-UUID="clipboard-khipu@ruddy.local"
+UUID="clipboard-khipu@ruddyquispe.github.io"
 API_URL="https://api.github.com/repos/$REPO/releases/latest"
 TARGET_DIR="$HOME/.local/share/gnome-shell/extensions/$UUID"
 

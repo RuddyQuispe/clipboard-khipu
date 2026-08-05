@@ -20,7 +20,7 @@ Para actualizar a una versión más nueva después, corre el mismo comando otra 
 Si GNOME Shell no la detecta de inmediato, cierra sesión y vuelve a entrar, luego corre:
 
 ```bash
-gnome-extensions enable clipboard-khipu@ruddy.local
+gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
 ```
 
 > ¿Prefieres compilarla tú mismo? Ve a [Contribuir](#contribuir) para la instalación desde código
@@ -127,7 +127,7 @@ reconocida, abre las preferencias y agrega su WM class en **Terminales → Pista
 ## Preferencias
 
 ```bash
-gnome-extensions prefs clipboard-khipu@ruddy.local
+gnome-extensions prefs clipboard-khipu@ruddyquispe.github.io
 ```
 
 - **Tamaño del historial** — cuántos elementos guardar (25 por defecto).
@@ -203,8 +203,8 @@ npm run install-link     # symlink de dist/ + schemas/ + metadata en el director
 Después de recompilar, recarga la extensión para que GNOME Shell tome el código nuevo:
 
 ```bash
-gnome-extensions disable clipboard-khipu@ruddy.local
-gnome-extensions enable  clipboard-khipu@ruddy.local
+gnome-extensions disable clipboard-khipu@ruddyquispe.github.io
+gnome-extensions enable  clipboard-khipu@ruddyquispe.github.io
 ```
 
 En Wayland, si el disable/enable no surte efecto (GJS cachea los módulos ES), cierra sesión y

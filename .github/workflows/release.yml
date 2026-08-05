@@ -24,25 +24,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build TypeScript
-        run: npm run build
-
-      - name: Compile GSettings schema
+      - name: Install schema compiler
         run: |
           sudo apt-get update
           sudo apt-get install -y libglib2.0-bin
-          glib-compile-schemas schemas/
 
       - name: Package extension
         id: package
         run: |
-          UUID="clipboard-khipu@ruddy.local"
-          PKG_DIR="package/$UUID"
-          mkdir -p "$PKG_DIR/schemas"
-          cp dist/*.js "$PKG_DIR/"
-          cp metadata.json stylesheet.css "$PKG_DIR/"
-          cp schemas/org.gnome.shell.extensions.clipboard-khipu.gschema.xml "$PKG_DIR/schemas/"
-          cp schemas/gschemas.compiled "$PKG_DIR/schemas/"
+          UUID="clipboard-khipu@ruddyquispe.github.io"
+          bash scripts/stage-package.sh "package/$UUID"
           ZIP_NAME="clipboard-khipu-${GITHUB_REF_NAME}.zip"
           (cd package && zip -qr "../$ZIP_NAME" "$UUID")
           echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"

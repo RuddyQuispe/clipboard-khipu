@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-UUID="clipboard-khipu@ruddy.local"
+UUID="clipboard-khipu@ruddyquispe.github.io"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_DIR="$HOME/.local/share/gnome-shell/extensions/$UUID"
 
