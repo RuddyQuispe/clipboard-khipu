@@ -7,6 +7,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { HistoryStore } from './historyStore.js';
 import { ClipboardMonitor } from './clipboardMonitor.js';
 import { openHistoryPopup } from './historyView.js';
+import type { HistoryPopupHandle } from './historyView.js';
 import { pasteEntry, destroyPaster } from './paster.js';
 import type { PasteTarget } from './paster.js';
 
@@ -17,6 +18,7 @@ export default class ClipboardKhipuExtension extends Extension {
     private _store: HistoryStore | null = null;
     private _monitor: ClipboardMonitor | null = null;
     private _settingsSignalIds: number[] = [];
+    private _popup: HistoryPopupHandle | null = null;
 
     enable(): void {
         const settings = this.getSettings();
@@ -72,6 +74,11 @@ export default class ClipboardKhipuExtension extends Extension {
     disable(): void {
         Main.wm.removeKeybinding(KEYBINDING_NAME);
 
+        // Nothing else tears down the modal grab or backdrop actor if the
+        // extension is disabled while the popup is still open.
+        this._popup?.close();
+        this._popup = null;
+
         for (const id of this._settingsSignalIds)
             this._settings?.disconnect(id);
         this._settingsSignalIds = [];
@@ -112,12 +119,15 @@ export default class ClipboardKhipuExtension extends Extension {
             return;
         }
 
-        openHistoryPopup(
+        this._popup = openHistoryPopup(
             entries,
             (entry, plainOnly) => {
                 pasteEntry(entry, monitor, autoPaste, target, plainOnly).catch(logError);
             },
-            entry => store.remove(entry.id)
+            entry => store.remove(entry.id),
+            () => {
+                this._popup = null;
+            }
         );
     }
 

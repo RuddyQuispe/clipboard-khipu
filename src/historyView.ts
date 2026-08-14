@@ -21,20 +21,30 @@ interface Row {
     entry: HistoryEntry;
 }
 
+export interface HistoryPopupHandle {
+    /** Idempotent — safe to call even if the popup already closed itself. */
+    close(): void;
+}
+
 /**
  * Opens the modal clipboard-history popup. Only called when there is more
  * than one entry to choose from — a single entry is pasted directly by the
- * caller, with no UI at all.
+ * caller, with no UI at all. Returns a handle the caller must close() if the
+ * extension is disabled while the popup is still open, since nothing else
+ * tears down the modal grab or the backdrop actor in that case.
  */
 export function openHistoryPopup(
     entries: readonly HistoryEntry[],
     onSelect: HistorySelectHandler,
-    onDelete: HistoryDeleteHandler
-): void {
-    new HistoryPopup(entries, onSelect, onDelete).open();
+    onDelete: HistoryDeleteHandler,
+    onClosed: () => void
+): HistoryPopupHandle {
+    const popup = new HistoryPopup(entries, onSelect, onDelete, onClosed);
+    popup.open();
+    return popup;
 }
 
-class HistoryPopup {
+class HistoryPopup implements HistoryPopupHandle {
     private _entries: HistoryEntry[];
     private readonly _onSelect: HistorySelectHandler;
     private readonly _onDelete: HistoryDeleteHandler;
@@ -43,14 +53,22 @@ class HistoryPopup {
     private readonly _searchEntry: St.Entry;
     private readonly _listBox: St.BoxLayout;
     private readonly _scrollView: St.ScrollView;
+    private readonly _onClosed: () => void;
     private _rows: Row[] = [];
     private _selectedIndex = 0;
     private _grab: ReturnType<typeof Main.pushModal> | null = null;
+    private _closed = false;
 
-    constructor(entries: readonly HistoryEntry[], onSelect: HistorySelectHandler, onDelete: HistoryDeleteHandler) {
+    constructor(
+        entries: readonly HistoryEntry[],
+        onSelect: HistorySelectHandler,
+        onDelete: HistoryDeleteHandler,
+        onClosed: () => void
+    ) {
         this._entries = [...entries];
         this._onSelect = onSelect;
         this._onDelete = onDelete;
+        this._onClosed = onClosed;
 
         this._searchEntry = new St.Entry({
             style_class: 'khipu-search',
@@ -108,12 +126,22 @@ class HistoryPopup {
         this._searchEntry.grab_key_focus();
     }
 
+    /** External entry point for the extension to force-close on disable(). */
+    close(): void {
+        this._close();
+    }
+
     private _close(): void {
+        if (this._closed)
+            return;
+        this._closed = true;
+
         if (this._grab) {
             Main.popModal(this._grab);
             this._grab = null;
         }
         this._backdrop.destroy();
+        this._onClosed();
     }
 
     private _position(rowCount: number): void {

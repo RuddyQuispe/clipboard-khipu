@@ -12,6 +12,10 @@ glib-compile-schemas schemas/
 rm -rf "$STAGE_DIR"
 mkdir -p "$STAGE_DIR/schemas"
 cp dist/*.js "$STAGE_DIR/"
+# types.ts only exports types — every import of it is `import type`, erased
+# by tsc — so dist/types.js is a dead `export {}` stub nothing loads at
+# runtime. Leaving it in the package makes it an unreachable file.
+rm -f "$STAGE_DIR/types.js"
 cp metadata.json stylesheet.css "$STAGE_DIR/"
 cp schemas/org.gnome.shell.extensions.clipboard-khipu.gschema.xml "$STAGE_DIR/schemas/"
 cp schemas/gschemas.compiled "$STAGE_DIR/schemas/"
