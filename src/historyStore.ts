@@ -109,7 +109,7 @@ export class HistoryStore {
         const id = GLib.uuid_string_random();
         const stored = await this._writeFlavors(id, flavors);
 
-        this._removeExisting(entry => entry.kind === 'text' && entry.text === text);
+        const wasPinned = this._removeExisting(entry => entry.kind === 'text' && entry.text === text);
 
         const entry: TextEntry = {
             id,
@@ -118,6 +118,7 @@ export class HistoryStore {
             flavors: stored,
             text,
             detectedType: detectTextType(text),
+            ...(wasPinned ? { pinned: true } : {}),
         };
         this._insert(entry);
     }
@@ -158,7 +159,7 @@ export class HistoryStore {
         const id = GLib.uuid_string_random();
         const stored = await this._writeFlavors(id, flavors);
 
-        this._removeExisting(entry => entry.kind === 'files' && sameUris(entry.uris, uris));
+        const wasPinned = this._removeExisting(entry => entry.kind === 'files' && sameUris(entry.uris, uris));
 
         const entry: FilesEntry = {
             id,
@@ -167,6 +168,7 @@ export class HistoryStore {
             flavors: stored,
             uris,
             operation,
+            ...(wasPinned ? { pinned: true } : {}),
         };
         this._insert(entry);
     }
@@ -179,6 +181,29 @@ export class HistoryStore {
         const [removed] = this._entries.splice(index, 1);
         this._deleteEntryFiles(removed);
         this._scheduleSave();
+    }
+
+    /**
+     * Pins or unpins an entry in place — its chronological position is kept.
+     * Never trims: an unpinned entry that pushes the unpinned count over the
+     * limit stays until the next copy (`_insert`) or `setMaxSize` trims it, so
+     * a toggle in the popup never deletes anything. Returns the updated entry,
+     * or null for an unknown id.
+     */
+    setPinned(id: string, pinned: boolean): HistoryEntry | null {
+        const index = this._entries.findIndex(entry => entry.id === id);
+        if (index === -1)
+            return null;
+
+        const updated: HistoryEntry = { ...this._entries[index] };
+        if (pinned)
+            updated.pinned = true;
+        else
+            delete updated.pinned;
+        this._entries[index] = updated;
+
+        this._scheduleSave();
+        return updated;
     }
 
     clear(): void {
@@ -241,12 +266,15 @@ export class HistoryStore {
         return stored;
     }
 
-    private _removeExisting(predicate: (entry: HistoryEntry) => boolean): void {
+    /** Drops a duplicate before re-inserting it; reports whether it was pinned. */
+    private _removeExisting(predicate: (entry: HistoryEntry) => boolean): boolean {
         const index = this._entries.findIndex(predicate);
-        if (index !== -1) {
-            const [removed] = this._entries.splice(index, 1);
-            this._deleteEntryFiles(removed);
-        }
+        if (index === -1)
+            return false;
+
+        const [removed] = this._entries.splice(index, 1);
+        this._deleteEntryFiles(removed);
+        return !!removed.pinned;
     }
 
     private _entryLooksValid(entry: HistoryEntry): boolean {
@@ -266,11 +294,18 @@ export class HistoryStore {
         return { ...entry, flavors };
     }
 
+    /**
+     * Evicts the oldest unpinned entries until at most `_maxSize` remain.
+     * Pinned entries are skipped and do not count toward the limit.
+     */
     private _trim(): void {
-        while (this._entries.length > this._maxSize) {
-            const removed = this._entries.pop();
-            if (removed)
-                this._deleteEntryFiles(removed);
+        let unpinned = this._entries.filter(entry => !entry.pinned).length;
+        for (let i = this._entries.length - 1; i >= 0 && unpinned > this._maxSize; i--) {
+            if (this._entries[i].pinned)
+                continue;
+            const [removed] = this._entries.splice(i, 1);
+            this._deleteEntryFiles(removed);
+            unpinned--;
         }
     }
 

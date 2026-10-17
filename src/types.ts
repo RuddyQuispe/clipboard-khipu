@@ -22,6 +22,12 @@ interface BaseEntry {
      * plain-only copies. Replayed byte-for-byte on paste.
      */
     flavors: Flavor[];
+    /**
+     * Pinned entries are exempt from capacity eviction and do not count
+     * toward `history-size`. Absent (not `false`) when unpinned, so histories
+     * written before pinning existed load unchanged.
+     */
+    pinned?: boolean;
 }
 
 export interface TextEntry extends BaseEntry {

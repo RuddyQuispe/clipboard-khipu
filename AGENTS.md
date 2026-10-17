@@ -55,8 +55,8 @@ only ever choose *which* stored blob to hand over.
 |------|----------------|
 | `extension.ts` | `enable()`/`disable()`, wires everything, registers the keybinding, captures the paste target and decides terminal vs normal paste. |
 | `clipboardMonitor.ts` | Listens to `Meta.Selection` `owner-changed`; classifies the grab by MIME priority (files > images > text) and reads *every* flavor sequentially via `Meta.Selection.transfer_async`; skips password-flagged content; anti-echo via `suppressNextChange()`; generation counter abandons in-flight reads when a new copy lands. |
-| `historyStore.ts` | In-memory ring buffer, most-recent-first; async debounced JSON persistence; dedup; image files and flavor blobs on disk; orphan-blob sweep on load; `remove()` / `clear()`. |
-| `historyView.ts` | The modal popup: search filter, keyboard/mouse nav, `Shift+Delete` removal, click-outside backdrop, deterministic scroll math. |
+| `historyStore.ts` | In-memory ring buffer, most-recent-first; async debounced JSON persistence; dedup (keeps the pin); pinned entries exempt from trim and from `history-size`; image files and flavor blobs on disk; orphan-blob sweep on load; `remove()` / `clear()` / `setPinned()`. |
+| `historyView.ts` | The modal popup: search filter, keyboard/mouse nav, `Shift+Delete` removal, `Ctrl+P` pin toggle, pinned section on top (selection starts at the latest copy), click-outside backdrop, deterministic scroll math. |
 | `paster.ts` | Picks the one representation the target window can use (rich flavor vs. primary), writes it back with `St.Clipboard`, then synthesizes `Ctrl+V` or `Ctrl+Shift+V` via the virtual keyboard. |
 | `typeDetect.ts` | Heuristic text-type detection — label/icon only, never affects stored content. |
 | `prefs.ts` | Adwaita (GTK4) preferences window, bound to GSettings. |
