@@ -48,6 +48,15 @@
     background-color: rgba(53, 132, 228, 0.35);
 }
 
+.khipu-row-pinned {
+    border-left: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.khipu-row-pin {
+    icon-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
 .khipu-row-icon {
     color: rgba(255, 255, 255, 0.75);
 }

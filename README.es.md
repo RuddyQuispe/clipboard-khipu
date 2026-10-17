@@ -106,6 +106,7 @@ Todo se maneja con el teclado. Una vez abierto el popup:
 | `Enter` | Pegar el elemento seleccionado |
 | `Ctrl+Enter` | Pegar el elemento seleccionado como texto plano (descarta el formato) |
 | `Shift+Delete` | Eliminar el elemento seleccionado del historial |
+| `Ctrl+P` | Fijar o desfijar el elemento seleccionado |
 | `Esc` | Cerrar el popup |
 | Clic en una fila | Pegar ese elemento |
 | Clic afuera | Cerrar el popup |
@@ -113,6 +114,9 @@ Todo se maneja con el teclado. Una vez abierto el popup:
 `Shift+Delete` (no `Delete` solo) elimina un elemento, así `Delete` queda libre para editar el
 texto de búsqueda — la misma convención que usa Firefox para descartar una sugerencia del
 historial.
+
+Los elementos fijados nunca se descartan y no cuentan para el tamaño del historial; conservan su
+lugar en la línea de tiempo y `Shift+Delete` igual los elimina.
 
 ## Terminales
 

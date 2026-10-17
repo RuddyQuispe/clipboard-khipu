@@ -125,6 +125,7 @@ export default class ClipboardKhipuExtension extends Extension {
                 pasteEntry(entry, monitor, autoPaste, target, plainOnly).catch(logError);
             },
             entry => store.remove(entry.id),
+            entry => store.setPinned(entry.id, !entry.pinned),
             () => {
                 this._popup = null;
             }

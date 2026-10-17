@@ -28,7 +28,7 @@ reused snippets fall out of history once `history-size` new copies arrive.
 ## Tasks
 - [x] T1 — Model + store: `pinned?` field, `_trim()` skips pinned, `setPinned()`, dedup keeps
   pinned. Route: delegated (writer). Commit: `feat(store): support pinned entries exempt from eviction`.
-- [ ] T2 — Popup (`Ctrl+P` toggle, pin icon, footer), wiring in `extension.ts`, stylesheet,
+- [x] T2 — Popup (`Ctrl+P` toggle, pin icon, footer), wiring in `extension.ts`, stylesheet,
   README.md / README.es.md / AGENTS.md. Route: delegated (writer, 2+ non-trivial files).
   Commit: `feat(popup): toggle pin with Ctrl+P`.
 
@@ -46,6 +46,12 @@ reused snippets fall out of history once `history-size` new copies arrive.
 
 ## Progress
 - Branch `feat/pin-entries` created from `master`.
+- T1 done in `4afcf5b` (`feat(store): support pinned entries exempt from eviction`): `_trim()` evicts
+  only unpinned entries from the tail, `setPinned()` toggles in place and re-trims, dedup carries the pin.
+- T2 done (`feat(popup): toggle pin with Ctrl+P`): Ctrl+P toggle keeping selection, pin icon and
+  `khipu-row-pinned` class, footer hint, `extension.ts` wiring, stylesheet, README/README.es/AGENTS.
+- Checks observed: `npx tsc --noEmit` pass, `npm run build` pass, `npm run compile-schemas` pass.
+  Manual QA pending.
 
 ## Next step
-T1.
+Manual QA in nested session (`npm run nested`) against the acceptance criteria.

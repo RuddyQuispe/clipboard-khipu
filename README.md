@@ -98,12 +98,16 @@ Everything is keyboard-driven. Once the popup is open:
 | `Enter` | Paste the selected entry |
 | `Ctrl+Enter` | Paste the selected entry as plain text (drops the formatting) |
 | `Shift+Delete` | Remove the selected entry from history |
+| `Ctrl+P` | Pin or unpin the selected entry |
 | `Esc` | Close the popup |
 | Click a row | Paste that entry |
 | Click outside | Close the popup |
 
 `Shift+Delete` (not plain `Delete`) removes an entry, so that `Delete` stays free for editing the
 search text — the same convention Firefox uses to drop a history suggestion.
+
+Pinned entries are never evicted and don't count toward the history size; they keep their place in
+the timeline and `Shift+Delete` still removes them.
 
 ## Terminals
 

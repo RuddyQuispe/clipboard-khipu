@@ -15,6 +15,8 @@ const PREVIEW_MAX_LENGTH = 160;
 /** `plainOnly` drops the stored rich flavors, pasting the bare text instead. */
 export type HistorySelectHandler = (entry: HistoryEntry, plainOnly: boolean) => void;
 export type HistoryDeleteHandler = (entry: HistoryEntry) => void;
+/** Toggles the pin; returns the updated entry, or null if it left the history. */
+export type HistoryPinHandler = (entry: HistoryEntry) => HistoryEntry | null;
 
 interface Row {
     actor: St.BoxLayout;
@@ -37,9 +39,10 @@ export function openHistoryPopup(
     entries: readonly HistoryEntry[],
     onSelect: HistorySelectHandler,
     onDelete: HistoryDeleteHandler,
+    onPin: HistoryPinHandler,
     onClosed: () => void
 ): HistoryPopupHandle {
-    const popup = new HistoryPopup(entries, onSelect, onDelete, onClosed);
+    const popup = new HistoryPopup(entries, onSelect, onDelete, onPin, onClosed);
     popup.open();
     return popup;
 }
@@ -48,6 +51,7 @@ class HistoryPopup implements HistoryPopupHandle {
     private _entries: HistoryEntry[];
     private readonly _onSelect: HistorySelectHandler;
     private readonly _onDelete: HistoryDeleteHandler;
+    private readonly _onPin: HistoryPinHandler;
     private readonly _backdrop: St.Widget;
     private readonly _container: St.BoxLayout;
     private readonly _searchEntry: St.Entry;
@@ -63,11 +67,13 @@ class HistoryPopup implements HistoryPopupHandle {
         entries: readonly HistoryEntry[],
         onSelect: HistorySelectHandler,
         onDelete: HistoryDeleteHandler,
+        onPin: HistoryPinHandler,
         onClosed: () => void
     ) {
         this._entries = [...entries];
         this._onSelect = onSelect;
         this._onDelete = onDelete;
+        this._onPin = onPin;
         this._onClosed = onClosed;
 
         this._searchEntry = new St.Entry({
@@ -100,7 +106,7 @@ class HistoryPopup implements HistoryPopupHandle {
         this._container.add_child(
             new St.Label({
                 style_class: 'khipu-footer',
-                text: '↑↓ navigate · Enter paste · Ctrl+Enter plain · Shift+Del remove · Esc close',
+                text: '↑↓ navigate · Enter paste · Ctrl+Enter plain · Shift+Del remove · Ctrl+P pin · Esc close',
             })
         );
         // Swallow clicks inside the box so they never reach the backdrop below.
@@ -189,6 +195,14 @@ class HistoryPopup implements HistoryPopupHandle {
         textBox.add_child(new St.Label({ text: metaFor(entry), style_class: 'khipu-row-meta' }));
         row.add_child(textBox);
 
+        if (entry.pinned) {
+            row.add_child(new St.Icon({
+                style_class: 'khipu-row-pin',
+                icon_name: 'view-pin-symbolic',
+                y_align: Clutter.ActorAlign.CENTER,
+            }));
+        }
+
         row.connect('button-press-event', () => {
             this._activate(entry, false);
             return Clutter.EVENT_STOP;
@@ -232,6 +246,14 @@ class HistoryPopup implements HistoryPopupHandle {
                 return Clutter.EVENT_STOP;
             }
             return Clutter.EVENT_PROPAGATE;
+        case Clutter.KEY_p:
+        case Clutter.KEY_P:
+            // Ctrl+P toggles the pin; a bare P is ordinary search input.
+            if ((event.get_state() & Clutter.ModifierType.CONTROL_MASK) !== 0) {
+                this._togglePinSelected();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
         default:
             return Clutter.EVENT_PROPAGATE;
         }
@@ -256,6 +278,30 @@ class HistoryPopup implements HistoryPopupHandle {
         this._renderRows(this._currentFiltered(), this._selectedIndex);
     }
 
+    private _togglePinSelected(): void {
+        const row = this._rows[this._selectedIndex];
+        if (!row)
+            return;
+
+        const updated = this._onPin(row.entry);
+
+        const masterIndex = this._entries.findIndex(entry => entry.id === row.entry.id);
+        if (masterIndex !== -1) {
+            if (updated)
+                this._entries[masterIndex] = updated;
+            else
+                this._entries.splice(masterIndex, 1);
+        }
+
+        if (this._entries.length === 0) {
+            this._close();
+            return;
+        }
+
+        // Keep the selection on the same row so repeated Ctrl+P toggles back.
+        this._renderRows(this._currentFiltered(), this._selectedIndex);
+    }
+
     private _moveSelection(delta: number): void {
         if (this._rows.length === 0)
             return;
@@ -267,7 +313,12 @@ class HistoryPopup implements HistoryPopupHandle {
 
     private _highlightSelected(): void {
         this._rows.forEach((row, index) => {
-            row.actor.style_class = index === this._selectedIndex ? 'khipu-row khipu-row-selected' : 'khipu-row';
+            const classes = ['khipu-row'];
+            if (row.entry.pinned)
+                classes.push('khipu-row-pinned');
+            if (index === this._selectedIndex)
+                classes.push('khipu-row-selected');
+            row.actor.style_class = classes.join(' ');
         });
         this._scrollSelectedIntoView();
     }
