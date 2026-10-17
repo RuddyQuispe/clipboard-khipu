@@ -106,8 +106,10 @@ Everything is keyboard-driven. Once the popup is open:
 `Shift+Delete` (not plain `Delete`) removes an entry, so that `Delete` stays free for editing the
 search text — the same convention Firefox uses to drop a history suggestion.
 
-Pinned entries are never evicted and don't count toward the history size; they keep their place in
-the timeline and `Shift+Delete` still removes them.
+Pinned entries are listed at the top of the popup, are never evicted and don't count toward the
+history size; `Shift+Delete` still removes them. The selection still starts on your latest copy, so
+`Super+V` then `Enter` pastes it as usual. Unpinning returns an entry to the normal flow without
+deleting anything; if the history is over the limit, it is trimmed on the next copy.
 
 ## Terminals
 

@@ -115,8 +115,10 @@ Todo se maneja con el teclado. Una vez abierto el popup:
 texto de búsqueda — la misma convención que usa Firefox para descartar una sugerencia del
 historial.
 
-Los elementos fijados nunca se descartan y no cuentan para el tamaño del historial; conservan su
-lugar en la línea de tiempo y `Shift+Delete` igual los elimina.
+Los elementos fijados aparecen arriba de todo en el popup, nunca se descartan y no cuentan para el
+tamaño del historial; `Shift+Delete` igual los elimina. La selección arranca siempre en tu última
+copia, así que `Super+V` y `Enter` la pegan como siempre. Al desfijar un elemento vuelve al flujo
+normal sin borrarse nada; si el historial está por encima del límite, se recorta en la próxima copia.
 
 ## Terminales
 

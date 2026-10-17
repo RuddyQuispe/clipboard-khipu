@@ -185,9 +185,10 @@ export class HistoryStore {
 
     /**
      * Pins or unpins an entry in place — its chronological position is kept.
-     * Unpinning can push the unpinned count over the limit, so trim right
-     * away. Returns the updated entry, or null if it is gone (unknown id, or
-     * evicted by that trim).
+     * Never trims: an unpinned entry that pushes the unpinned count over the
+     * limit stays until the next copy (`_insert`) or `setMaxSize` trims it, so
+     * a toggle in the popup never deletes anything. Returns the updated entry,
+     * or null for an unknown id.
      */
     setPinned(id: string, pinned: boolean): HistoryEntry | null {
         const index = this._entries.findIndex(entry => entry.id === id);
@@ -201,9 +202,8 @@ export class HistoryStore {
             delete updated.pinned;
         this._entries[index] = updated;
 
-        this._trim();
         this._scheduleSave();
-        return this._entries.includes(updated) ? updated : null;
+        return updated;
     }
 
     clear(): void {
@@ -274,7 +274,7 @@ export class HistoryStore {
 
         const [removed] = this._entries.splice(index, 1);
         this._deleteEntryFiles(removed);
-        return removed.pinned === true;
+        return !!removed.pinned;
     }
 
     private _entryLooksValid(entry: HistoryEntry): boolean {

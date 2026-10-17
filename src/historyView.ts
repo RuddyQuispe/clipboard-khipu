@@ -15,8 +15,8 @@ const PREVIEW_MAX_LENGTH = 160;
 /** `plainOnly` drops the stored rich flavors, pasting the bare text instead. */
 export type HistorySelectHandler = (entry: HistoryEntry, plainOnly: boolean) => void;
 export type HistoryDeleteHandler = (entry: HistoryEntry) => void;
-/** Toggles the pin; returns the updated entry, or null if it left the history. */
-export type HistoryPinHandler = (entry: HistoryEntry) => HistoryEntry | null;
+/** Toggles the pin; returns the full current history so the popup can resync. */
+export type HistoryPinHandler = (entry: HistoryEntry) => readonly HistoryEntry[];
 
 interface Row {
     actor: St.BoxLayout;
@@ -120,7 +120,7 @@ class HistoryPopup implements HistoryPopupHandle {
             return Clutter.EVENT_STOP;
         });
 
-        this._renderRows(this._entries);
+        this._renderRows(this._currentFiltered());
     }
 
     open(): void {
@@ -167,7 +167,8 @@ class HistoryPopup implements HistoryPopupHandle {
         this._container.set_position(x, y);
     }
 
-    private _renderRows(entries: readonly HistoryEntry[], selectedIndex = 0): void {
+    /** Without an explicit index, selects the newest unpinned row (the latest copy). */
+    private _renderRows(entries: readonly HistoryEntry[], selectedIndex = defaultSelection(entries)): void {
         this._listBox.destroy_all_children();
         this._rows = entries.map(entry => ({ actor: this._buildRow(entry), entry }));
 
@@ -211,9 +212,11 @@ class HistoryPopup implements HistoryPopupHandle {
         return row;
     }
 
+    /** The rows as displayed: search-filtered, then pinned section first. */
     private _currentFiltered(): readonly HistoryEntry[] {
         const query = this._searchEntry.get_text().trim().toLowerCase();
-        return query.length === 0 ? this._entries : this._entries.filter(entry => matches(entry, query));
+        const filtered = query.length === 0 ? this._entries : this._entries.filter(entry => matches(entry, query));
+        return pinnedFirst(filtered);
     }
 
     private _onSearchChanged(): void {
@@ -283,23 +286,20 @@ class HistoryPopup implements HistoryPopupHandle {
         if (!row)
             return;
 
-        const updated = this._onPin(row.entry);
-
-        const masterIndex = this._entries.findIndex(entry => entry.id === row.entry.id);
-        if (masterIndex !== -1) {
-            if (updated)
-                this._entries[masterIndex] = updated;
-            else
-                this._entries.splice(masterIndex, 1);
-        }
+        // Resync with the store rather than patching locally, so the popup
+        // can never show a row the store no longer holds.
+        this._entries = [...this._onPin(row.entry)];
 
         if (this._entries.length === 0) {
             this._close();
             return;
         }
 
-        // Keep the selection on the same row so repeated Ctrl+P toggles back.
-        this._renderRows(this._currentFiltered(), this._selectedIndex);
+        // The toggled entry moves between sections; follow it by id so a
+        // repeated Ctrl+P toggles it back.
+        const rows = this._currentFiltered();
+        const index = rows.findIndex(entry => entry.id === row.entry.id);
+        this._renderRows(rows, index === -1 ? rows.length - 1 : index);
     }
 
     private _moveSelection(delta: number): void {
@@ -345,6 +345,17 @@ class HistoryPopup implements HistoryPopupHandle {
         this._close();
         this._onSelect(entry, plainOnly);
     }
+}
+
+/** Stable partition: pinned entries first, each group keeping newest-first order. */
+function pinnedFirst(entries: readonly HistoryEntry[]): HistoryEntry[] {
+    return [...entries.filter(entry => entry.pinned), ...entries.filter(entry => !entry.pinned)];
+}
+
+/** The newest unpinned row, so Enter pastes the latest copy; row 0 if all are pinned. */
+function defaultSelection(entries: readonly HistoryEntry[]): number {
+    const index = entries.findIndex(entry => !entry.pinned);
+    return index === -1 ? 0 : index;
 }
 
 function matches(entry: HistoryEntry, query: string): boolean {
