@@ -151,11 +151,11 @@ function buildTerminalGroup(settings: Gio.Settings): Adw.PreferencesGroup {
 function buildShortcutGroup(settings: Gio.Settings): Adw.PreferencesGroup {
     const group = new Adw.PreferencesGroup({
         title: 'Shortcut',
-        description: 'GTK accelerator syntax, e.g. &lt;Super&gt;v or &lt;Control&gt;&lt;Alt&gt;c',
+        description: 'No shortcut is set by default. GTK accelerator syntax, e.g. &lt;Super&gt;v or &lt;Control&gt;&lt;Alt&gt;c. Clear the field to unbind.',
     });
 
     const row = new Adw.EntryRow({ title: 'Open history' });
-    row.set_text(settings.get_strv('open-history')[0] ?? '<Super>v');
+    row.set_text(settings.get_strv('open-history')[0] ?? '');
 
     row.connect('changed', () => {
         const text = row.get_text().trim();
@@ -163,9 +163,12 @@ function buildShortcutGroup(settings: Gio.Settings): Adw.PreferencesGroup {
         const valid = ok && keyval !== 0 && Gtk.accelerator_valid(keyval, mods ?? 0);
 
         row.remove_css_class('error');
+        if (text.length === 0) {
+            settings.set_strv('open-history', []);
+            return;
+        }
         if (!valid) {
-            if (text.length > 0)
-                row.add_css_class('error');
+            row.add_css_class('error');
             return;
         }
 

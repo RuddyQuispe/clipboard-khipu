@@ -4,7 +4,7 @@
           path="/org/gnome/shell/extensions/clipboard-khipu/">
 
     <key name="open-history" type="as">
-      <default>['&lt;Super&gt;v']</default>
+      <default>[]</default>
       <summary>Open clipboard history</summary>
       <description>Keybinding that opens the clipboard history popup.</description>
     </key>

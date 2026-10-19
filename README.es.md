@@ -28,6 +28,8 @@ gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
 
 ## Cómo funciona
 
+0. Configura tu atajo una vez en **Preferencias → Atajo** (por ejemplo `<Super>v`). No hay atajo
+   por defecto, como exige extensions.gnome.org para extensiones de portapapeles.
 1. Copia cosas como lo harías normalmente — texto, una imagen, o archivos en un gestor de archivos
    (Nautilus).
 2. Presiona **`Super+V`**. Aparece un popup con búsqueda que lista tus elementos copiados
@@ -100,7 +102,7 @@ Todo se maneja con el teclado. Una vez abierto el popup:
 
 | Tecla | Acción |
 |-----|--------|
-| `Super+V` | Abrir el historial de portapapeles (configurable) |
+| *tu atajo* | Abrir el historial de portapapeles (configúralo en Preferencias → Atajo, p. ej. `Super+V`) |
 | `↑` / `↓` | Mover la selección |
 | *escribir algo* | Filtrar la lista |
 | `Enter` | Pegar el elemento seleccionado |
@@ -145,7 +147,7 @@ gnome-extensions prefs clipboard-khipu@ruddyquispe.github.io
 - **Pistas de gestor de archivos** — clases de ventana que reciben un archivo copiado como archivo.
 - **Pistas de subida de archivos** — clases de ventana que reciben un archivo copiado para adjuntar.
 - **Pistas de terminal** — clases de ventana que deben pegar con `Ctrl+Shift+V`.
-- **Atajo** — reasignar la tecla que abre el historial.
+- **Atajo** — definir la tecla que abre el historial (vacío por defecto; borra el campo para quitarlo).
 - **Limpiar historial** — borra todos los elementos, imágenes y formatos guardados.
 
 ## Compatibilidad

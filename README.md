@@ -26,6 +26,8 @@ gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
 
 ## How it works
 
+0. Set your shortcut once in **Preferences → Shortcut** (e.g. `<Super>v`). No shortcut is set by
+   default, as extensions.gnome.org requires for clipboard extensions.
 1. Copy things as you normally would — text, an image, or files in a file manager (Nautilus).
 2. Press **`Super+V`**. A searchable popup lists your recent clipboard items.
 3. Pick one — with the keyboard or the mouse — and it's pasted back into whatever you were using,
@@ -92,7 +94,7 @@ Everything is keyboard-driven. Once the popup is open:
 
 | Key | Action |
 |-----|--------|
-| `Super+V` | Open clipboard history (configurable) |
+| *your shortcut* | Open clipboard history (set it in Preferences → Shortcut, e.g. `Super+V`) |
 | `↑` / `↓` | Move the selection |
 | *type anything* | Filter the list |
 | `Enter` | Paste the selected entry |
@@ -135,7 +137,7 @@ gnome-extensions prefs clipboard-khipu@ruddyquispe.github.io
 - **File manager hints** — window classes that receive a copied file as the file itself.
 - **File upload hints** — window classes that receive a copied file as a file to attach.
 - **Terminal hints** — window classes that should paste with `Ctrl+Shift+V`.
-- **Shortcut** — rebind the open-history key.
+- **Shortcut** — set the open-history key (empty by default; clear the field to unbind).
 - **Clear history** — wipe all stored entries, images and formats.
 
 ## Compatibility
