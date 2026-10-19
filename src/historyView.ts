@@ -52,11 +52,17 @@ class HistoryPopup implements HistoryPopupHandle {
     private readonly _onSelect: HistorySelectHandler;
     private readonly _onDelete: HistoryDeleteHandler;
     private readonly _onPin: HistoryPinHandler;
-    private readonly _backdrop: St.Widget;
-    private readonly _container: St.BoxLayout;
-    private readonly _searchEntry: St.Entry;
-    private readonly _listBox: St.BoxLayout;
-    private readonly _scrollView: St.ScrollView;
+    // Non-null from construction until _close(), which releases them so the
+    // popup holds no actor once it is gone.
+    private _backdrop: St.Widget | null;
+    private _container: St.BoxLayout | null;
+    private _searchEntry: St.Entry | null;
+    private _listBox: St.BoxLayout | null;
+    private _scrollView: St.ScrollView | null;
+    private _keyPressId = 0;
+    private _textChangedId = 0;
+    private _containerPressId = 0;
+    private _backdropPressId = 0;
     private readonly _onClosed: () => void;
     private _rows: Row[] = [];
     private _selectedIndex = 0;
@@ -76,60 +82,65 @@ class HistoryPopup implements HistoryPopupHandle {
         this._onPin = onPin;
         this._onClosed = onClosed;
 
-        this._searchEntry = new St.Entry({
+        const searchEntry = new St.Entry({
             style_class: 'khipu-search',
             hint_text: 'Type to filter…',
             can_focus: true,
             x_expand: true,
         });
-        this._searchEntry.clutter_text.connect('key-press-event', (_actor, event) => this._onKeyPress(event));
-        this._searchEntry.clutter_text.connect('text-changed', () => this._onSearchChanged());
+        this._keyPressId = searchEntry.clutter_text.connect('key-press-event', (_actor, event) => this._onKeyPress(event));
+        this._textChangedId = searchEntry.clutter_text.connect('text-changed', () => this._onSearchChanged());
+        this._searchEntry = searchEntry;
 
-        this._listBox = new St.BoxLayout({ vertical: true, style_class: 'khipu-list', x_expand: true });
+        const listBox = new St.BoxLayout({ vertical: true, style_class: 'khipu-list', x_expand: true });
+        this._listBox = listBox;
 
-        this._scrollView = new St.ScrollView({
+        const scrollView = new St.ScrollView({
             style_class: 'khipu-scroll',
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
             x_expand: true,
         });
-        this._scrollView.set_child(this._listBox);
+        scrollView.set_child(listBox);
+        this._scrollView = scrollView;
 
-        this._container = new St.BoxLayout({
+        const container = new St.BoxLayout({
             vertical: true,
             style_class: 'khipu-popup',
             width: POPUP_WIDTH,
             reactive: true,
         });
-        this._container.add_child(this._searchEntry);
-        this._container.add_child(this._scrollView);
-        this._container.add_child(
+        container.add_child(searchEntry);
+        container.add_child(scrollView);
+        container.add_child(
             new St.Label({
                 style_class: 'khipu-footer',
                 text: '↑↓ navigate · Enter paste · Ctrl+Enter plain · Shift+Del remove · Ctrl+P pin · Esc close',
             })
         );
         // Swallow clicks inside the box so they never reach the backdrop below.
-        this._container.connect('button-press-event', () => Clutter.EVENT_STOP);
+        this._containerPressId = container.connect('button-press-event', () => Clutter.EVENT_STOP);
+        this._container = container;
 
         // Full-stage transparent backdrop: a click anywhere outside the box closes.
-        this._backdrop = new St.Widget({ reactive: true });
-        this._backdrop.add_child(this._container);
-        this._backdrop.connect('button-press-event', () => {
+        const backdrop = new St.Widget({ reactive: true });
+        backdrop.add_child(container);
+        this._backdropPressId = backdrop.connect('button-press-event', () => {
             this._close();
             return Clutter.EVENT_STOP;
         });
+        this._backdrop = backdrop;
 
         this._renderRows(this._currentFiltered());
     }
 
     open(): void {
         const stage = global.stage;
-        this._backdrop.set_size(stage.width, stage.height);
-        Main.layoutManager.uiGroup.add_child(this._backdrop);
+        this._backdrop!.set_size(stage.width, stage.height);
+        Main.layoutManager.uiGroup.add_child(this._backdrop!);
         this._position(this._entries.length);
-        this._grab = Main.pushModal(this._backdrop);
-        this._searchEntry.grab_key_focus();
+        this._grab = Main.pushModal(this._backdrop!);
+        this._searchEntry!.grab_key_focus();
     }
 
     /** External entry point for the extension to force-close on disable(). */
@@ -146,7 +157,28 @@ class HistoryPopup implements HistoryPopupHandle {
             Main.popModal(this._grab);
             this._grab = null;
         }
-        this._backdrop.destroy();
+
+        this._searchEntry!.clutter_text.disconnect(this._keyPressId);
+        this._searchEntry!.clutter_text.disconnect(this._textChangedId);
+        this._container!.disconnect(this._containerPressId);
+        this._backdrop!.disconnect(this._backdropPressId);
+        this._keyPressId = 0;
+        this._textChangedId = 0;
+        this._containerPressId = 0;
+        this._backdropPressId = 0;
+
+        // Leaf-first, so every actor is still alive when it is destroyed.
+        this._searchEntry!.destroy();
+        this._searchEntry = null;
+        this._listBox!.destroy();
+        this._listBox = null;
+        this._scrollView!.destroy();
+        this._scrollView = null;
+        this._container!.destroy();
+        this._container = null;
+        this._backdrop!.destroy();
+        this._backdrop = null;
+
         this._onClosed();
     }
 
@@ -159,24 +191,24 @@ class HistoryPopup implements HistoryPopupHandle {
             POPUP_MAX_HEIGHT - SEARCH_ROW_HEIGHT - FOOTER_ROW_HEIGHT,
             Math.max(1, rowCount) * ROW_HEIGHT
         );
-        this._scrollView.set_height(listHeight);
+        this._scrollView!.set_height(listHeight);
 
         const totalHeight = SEARCH_ROW_HEIGHT + listHeight + FOOTER_ROW_HEIGHT;
         const x = monitor.x + Math.floor((monitor.width - POPUP_WIDTH) / 2);
         const y = monitor.y + Math.floor((monitor.height - totalHeight) / 2);
-        this._container.set_position(x, y);
+        this._container!.set_position(x, y);
     }
 
     /** Without an explicit index, selects the newest unpinned row (the latest copy). */
     private _renderRows(entries: readonly HistoryEntry[], selectedIndex = defaultSelection(entries)): void {
-        this._listBox.destroy_all_children();
+        this._listBox!.destroy_all_children();
         this._rows = entries.map(entry => ({ actor: this._buildRow(entry), entry }));
 
         if (this._rows.length === 0) {
-            this._listBox.add_child(new St.Label({ text: 'No matches', style_class: 'khipu-empty' }));
+            this._listBox!.add_child(new St.Label({ text: 'No matches', style_class: 'khipu-empty' }));
         } else {
             for (const row of this._rows)
-                this._listBox.add_child(row.actor);
+                this._listBox!.add_child(row.actor);
         }
 
         this._selectedIndex =
@@ -214,7 +246,7 @@ class HistoryPopup implements HistoryPopupHandle {
 
     /** The rows as displayed: search-filtered, then pinned section first. */
     private _currentFiltered(): readonly HistoryEntry[] {
-        const query = this._searchEntry.get_text().trim().toLowerCase();
+        const query = this._searchEntry!.get_text().trim().toLowerCase();
         const filtered = query.length === 0 ? this._entries : this._entries.filter(entry => matches(entry, query));
         return pinnedFirst(filtered);
     }
@@ -324,8 +356,8 @@ class HistoryPopup implements HistoryPopupHandle {
     }
 
     private _scrollSelectedIntoView(): void {
-        const adjustment = this._scrollView.vadjustment;
-        const viewHeight = this._scrollView.height;
+        const adjustment = this._scrollView!.vadjustment;
+        const viewHeight = this._scrollView!.height;
         const rowTop = this._selectedIndex * ROW_HEIGHT;
         const rowBottom = rowTop + ROW_HEIGHT;
 
