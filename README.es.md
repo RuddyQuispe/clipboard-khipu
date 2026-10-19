@@ -32,12 +32,12 @@ gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
    por defecto, como exige extensions.gnome.org para extensiones de portapapeles.
 1. Copia cosas como lo harías normalmente — texto, una imagen, o archivos en un gestor de archivos
    (Nautilus).
-2. Presiona **`Super+V`**. Aparece un popup con búsqueda que lista tus elementos copiados
+2. Presiona tu atajo (por ejemplo **`Super+V`**). Aparece un popup con búsqueda que lista tus elementos copiados
    recientemente.
 3. Elige uno — con el teclado o el mouse — y se pega de vuelta en lo que estabas usando,
    **exactamente** como fue copiado. JSON, YAML y código mantienen su formato byte por byte.
 
-Si solo hay **un** elemento en el historial, `Super+V` lo pega de inmediato — sin menú.
+Si solo hay **un** elemento en el historial, el atajo lo pega de inmediato — sin menú.
 
 Pegar es **consciente de la terminal**: en una app normal envía `Ctrl+V`, y en una terminal envía
 `Ctrl+Shift+V` (ver [Terminales](#terminales)).

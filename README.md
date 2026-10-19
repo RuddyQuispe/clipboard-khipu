@@ -29,11 +29,11 @@ gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
 0. Set your shortcut once in **Preferences → Shortcut** (e.g. `<Super>v`). No shortcut is set by
    default, as extensions.gnome.org requires for clipboard extensions.
 1. Copy things as you normally would — text, an image, or files in a file manager (Nautilus).
-2. Press **`Super+V`**. A searchable popup lists your recent clipboard items.
+2. Press your shortcut (e.g. **`Super+V`**). A searchable popup lists your recent clipboard items.
 3. Pick one — with the keyboard or the mouse — and it's pasted back into whatever you were using,
    **exactly** as it was copied. JSON, YAML and code keep their formatting byte-for-byte.
 
-If there's only **one** item in history, `Super+V` pastes it immediately — no menu.
+If there's only **one** item in history, the shortcut pastes it immediately — no menu.
 
 Pasting is **terminal-aware**: in a normal app it sends `Ctrl+V`, and in a terminal it sends
 `Ctrl+Shift+V` (see [Terminals](#terminals)).
