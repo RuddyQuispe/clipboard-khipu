@@ -1,10 +1,10 @@
 {
   "uuid": "clipboard-khipu@ruddyquispe.github.io",
   "name": "Clipboard Khipu",
-  "description": "Developer-focused clipboard history for GNOME Shell. Press Super+V to see what you've copied — text, images and files — and paste it back exactly as it was.",
+  "description": "Developer-focused clipboard history for GNOME Shell. This extension reads and writes the clipboard to keep a local history of text, images and files; nothing leaves your machine. No shortcut is set by default: pick one (e.g. Super+V) in Preferences, then use it to see what you've copied and paste it back exactly as it was.",
   "shell-version": ["46", "47", "48", "49", "50"],
   "url": "https://github.com/RuddyQuispe/clipboard-khipu",
   "settings-schema": "org.gnome.shell.extensions.clipboard-khipu",
   "gettext-domain": "clipboard-khipu",
-  "version-name": "0.1.0"
+  "version-name": "0.2.0"
 }
