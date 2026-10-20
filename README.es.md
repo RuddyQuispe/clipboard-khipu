@@ -15,13 +15,37 @@ curl -fsSL https://raw.githubusercontent.com/RuddyQuispe/clipboard-khipu/master/
 
 Esto descarga la última versión ya compilada y la instala — no necesitas Node ni herramientas de
 compilación.
-Para actualizar a una versión más nueva después, corre el mismo comando otra vez.
 
 Si GNOME Shell no la detecta de inmediato, cierra sesión y vuelve a entrar, luego corre:
 
 ```bash
 gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
 ```
+
+**Después configura tu atajo** — no hay ninguno por defecto, así que nada se abre hasta que elijas
+uno. Abre **Preferencias → Shortcut**:
+
+```bash
+gnome-extensions prefs clipboard-khipu@ruddyquispe.github.io
+```
+
+o configúralo desde la terminal:
+
+```bash
+gsettings --schemadir ~/.local/share/gnome-shell/extensions/clipboard-khipu@ruddyquispe.github.io/schemas \
+  set org.gnome.shell.extensions.clipboard-khipu open-history "['<Super>v']"
+```
+
+### Actualizar la extensión
+
+Corre el mismo comando `curl … | bash` otra vez y luego cierra sesión y vuelve a entrar (en Wayland,
+GNOME Shell mantiene cargado el código anterior hasta que se reinicia la sesión). Tu historial y tu
+configuración se conservan.
+
+> [!NOTE]
+> El instalador descarga la última **versión publicada** (release), no el commit más nuevo de
+> `master`. Si un cambio todavía no se publicó, no se instala — compílala desde el código fuente
+> ([Actualizar desde el código fuente](#actualizar-desde-el-código-fuente)).
 
 > ¿Prefieres compilarla tú mismo? Ve a [Contribuir](#contribuir) para la instalación desde código
 > fuente.
@@ -222,11 +246,11 @@ vuelve a entrar para un reinicio limpio del Shell.
 > `gnome-shell --nested`, que fue **eliminado en GNOME 50**. En 50+ usa el ciclo disable/enable o
 > el re-login de arriba.
 
-### Actualizar
+### Actualizar desde el código fuente
 
-Si instalaste desde código fuente (no con `install.sh`), traer commits nuevos no actualiza la
-extensión en ejecución por sí solo — `install-link` enlaza cada archivo de `dist/*.js` de forma
-individual, así que una recompilación nueva igual necesita volver a enlazarse:
+Traer commits nuevos no actualiza la extensión en ejecución por sí solo — `install-link` enlaza cada
+archivo de `dist/*.js` de forma individual, así que una recompilación nueva igual necesita volver a
+enlazarse:
 
 ```bash
 git pull
@@ -236,8 +260,13 @@ npm run compile-schemas
 npm run install-link       # se puede volver a correr siempre, sin riesgo
 ```
 
+`install-link` reemplaza lo que esté instalado, incluida una versión instalada con `install.sh`, así
+que así también se pasa de la versión publicada a tu compilación local. Tu historial y tu
+configuración se conservan.
+
 Luego recarga la extensión como en el [ciclo de recarga](#ciclo-de-recarga-en-desarrollo) de
-arriba (disable/enable, o cerrar sesión y volver a entrar en Wayland si eso no funciona).
+arriba (disable/enable, o cerrar sesión y volver a entrar en Wayland si eso no funciona). Si
+después el atajo no hace nada, revisa que tengas uno configurado (ver [Instalación](#instalación)).
 
 ### Verificar
 

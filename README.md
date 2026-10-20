@@ -14,13 +14,36 @@ curl -fsSL https://raw.githubusercontent.com/RuddyQuispe/clipboard-khipu/master/
 ```
 
 This downloads the latest prebuilt release and installs it — no Node or build tools needed.
-To update to a newer release later, just run the same command again.
 
 If GNOME Shell doesn't pick it up immediately, log out and back in, then run:
 
 ```bash
 gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
 ```
+
+**Then set your shortcut** — none is set by default, so nothing opens until you pick one. Open
+**Preferences → Shortcut**:
+
+```bash
+gnome-extensions prefs clipboard-khipu@ruddyquispe.github.io
+```
+
+or set it from the terminal:
+
+```bash
+gsettings --schemadir ~/.local/share/gnome-shell/extensions/clipboard-khipu@ruddyquispe.github.io/schemas \
+  set org.gnome.shell.extensions.clipboard-khipu open-history "['<Super>v']"
+```
+
+### Update
+
+Run the same `curl … | bash` command again, then log out and back in (on Wayland GNOME Shell keeps
+the old code loaded until the session restarts). Your history and settings are kept.
+
+> [!NOTE]
+> The installer fetches the latest **published release**, not the newest commit on `master`. If a
+> change hasn't been released yet, it won't be installed — build from source instead
+> ([Update from source](#update-from-source)).
 
 > Prefer to build it yourself? See [Contributing](#contributing) for the from-source install.
 
@@ -208,11 +231,10 @@ clean Shell restart.
 > A nested-shell workflow (`scripts/run-nested.sh`) exists but relies on `gnome-shell --nested`,
 > which was **removed in GNOME 50**. On 50+ use the disable/enable or re-login loop above.
 
-### Update
+### Update from source
 
-If you installed from source (not via `install.sh`), pulling new commits doesn't update the running
-extension by itself — `install-link` symlinks each `dist/*.js` file individually, so a fresh build
-still needs to be re-linked:
+Pulling new commits doesn't update the running extension by itself — `install-link` symlinks each
+`dist/*.js` file individually, so a fresh build still needs to be re-linked:
 
 ```bash
 git pull
@@ -222,8 +244,12 @@ npm run compile-schemas
 npm run install-link       # safe to re-run any time, re-links new/changed files
 ```
 
+`install-link` replaces whatever is installed, including a release installed with `install.sh`, so
+this is also how you switch from the release to your local build. Your history and settings are kept.
+
 Then reload the extension as in the [dev reload loop](#dev-reload-loop) above (disable/enable, or
-log out and back in on Wayland if that doesn't take).
+log out and back in on Wayland if that doesn't take). If the shortcut does nothing afterwards, check
+that one is set (see [Install](#install)).
 
 ### Verify
 

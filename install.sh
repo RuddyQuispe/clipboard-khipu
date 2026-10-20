@@ -57,10 +57,13 @@ fi
 echo "Enabling extension…"
 if gnome-extensions enable "$UUID" 2>/dev/null; then
     echo
-    echo "Done. Press Super+V to open your clipboard history."
+    echo "Done."
 else
     echo
     echo "Installed, but GNOME Shell hasn't picked it up yet."
     echo "Log out and back in, then run:"
     echo "    gnome-extensions enable $UUID"
 fi
+echo
+echo "No shortcut is set by default — pick one (e.g. Super+V) in:"
+echo "    gnome-extensions prefs $UUID"
