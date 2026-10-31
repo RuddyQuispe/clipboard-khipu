@@ -12,7 +12,8 @@
     "install-link": "bash scripts/install-link.sh",
     "nested": "bash scripts/run-nested.sh",
     "pack": "npm run build && npm run compile-schemas",
-    "pack:ego": "bash scripts/pack-ego.sh"
+    "pack:ego": "bash scripts/pack-ego.sh",
+    "test": "bash scripts/test.sh"
   },
   "devDependencies": {
     "@girs/gjs": "4.1.0",

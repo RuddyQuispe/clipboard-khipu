@@ -243,12 +243,17 @@ arriba (disable/enable, o cerrar sesión y volver a entrar en Wayland si eso no 
 
 ```bash
 npx tsc --noEmit         # typecheck estricto contra los tipos reales de introspección de GNOME 50
+npm test                 # pruebas unitarias con GJS (requiere gjs y glib-compile-schemas)
 ```
 
-Todavía **no hay una suite de pruebas automatizada** — la verificación es el typecheck de arriba
-más una pasada manual de QA (pegar texto con formato intacto, una imagen, archivos desde Nautilus;
-pegado directo con un solo elemento; búsqueda, borrado, clic afuera; el historial sobrevive a un
-disable/enable). Agregar pruebas automatizadas es una contribución bienvenida.
+`npm test` ejecuta la suite de `tests/` con `gjs`, fuera de GNOME Shell. Cubre todo lo que no
+necesita el compositor: detección del tipo de texto, la búsqueda/orden/etiquetas del popup, las
+decisiones de pegado (qué ventana recibe qué formato), los valores por defecto del esquema de
+configuración y el almacén del historial sobre un directorio de datos descartable (guardado literal,
+deduplicación, fijados, desalojo, persistencia, limpieza de blobs). La captura del portapapeles, el
+popup y el pegado sintetizado viven dentro de GNOME Shell, así que siguen necesitando una pasada
+manual de QA: pegar texto con formato intacto, una imagen, archivos desde Nautilus; pegado directo
+con un solo elemento; búsqueda, borrado, clic afuera; el historial sobrevive a un disable/enable.
 
 ### Publicar una versión
 

@@ -229,12 +229,16 @@ log out and back in on Wayland if that doesn't take).
 
 ```bash
 npx tsc --noEmit         # strict typecheck against the real GNOME 50 introspection types
+npm test                 # unit tests under GJS (needs gjs and glib-compile-schemas)
 ```
 
-There is **no automated test suite yet** — verification is the typecheck above plus a manual QA
-pass (paste text with formatting intact, an image, files from Nautilus; single-item direct paste;
-search, delete, click-outside; history survives a disable/enable). Adding automated tests is a
-welcome contribution.
+`npm test` runs the suite in `tests/` with plain `gjs`, outside GNOME Shell. It covers everything
+that does not need the compositor: text-type detection, the popup's search/order/labels, the paste
+decisions (which window gets which format), the settings schema defaults, and the history store
+against a throwaway data directory (verbatim storage, dedup, pins, eviction, persistence, blob
+cleanup). Clipboard capture, the popup itself and the synthesized paste live inside GNOME Shell, so
+they still need a manual QA pass: paste text with formatting intact, an image, files from Nautilus;
+single-item direct paste; search, delete, click-outside; history survives a disable/enable.
 
 ### Release
 

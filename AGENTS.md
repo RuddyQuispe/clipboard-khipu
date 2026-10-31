@@ -57,7 +57,9 @@ only ever choose *which* stored blob to hand over.
 | `clipboardMonitor.ts` | Listens to `Meta.Selection` `owner-changed`; classifies the grab by MIME priority (files > images > text) and reads *every* flavor sequentially via `Meta.Selection.transfer_async`; skips password-flagged content; anti-echo via `suppressNextChange()`; generation counter abandons in-flight reads when a new copy lands. |
 | `historyStore.ts` | In-memory ring buffer, most-recent-first; async debounced JSON persistence; dedup (keeps the pin); pinned entries exempt from trim and from `history-size`; image files and flavor blobs on disk; orphan-blob sweep on load; `remove()` / `clear()` / `setPinned()`. |
 | `historyView.ts` | The modal popup: search filter, keyboard/mouse nav, `Shift+Delete` removal, `Ctrl+P` pin toggle, pinned section on top (selection starts at the latest copy), click-outside backdrop, deterministic scroll math. |
-| `paster.ts` | Picks the one representation the target window can use (rich flavor vs. primary), writes it back with `St.Clipboard`, then synthesizes `Ctrl+V` or `Ctrl+Shift+V` via the virtual keyboard. |
+| `paster.ts` | Carries out the paste plan: writes the chosen representation back with `St.Clipboard`, then synthesizes `Ctrl+V` or `Ctrl+Shift+V` via the virtual keyboard. |
+| `pastePlan.ts` | Pure paste decisions: classifies the target window from the WM-class hint lists, picks rich flavor vs. primary and how a file list is handed over, builds the file payloads. |
+| `historyQuery.ts` | Pure popup logic: search filter, pinned-first order, default selection, row preview and meta labels. |
 | `typeDetect.ts` | Heuristic text-type detection — label/icon only, never affects stored content. |
 | `prefs.ts` | Adwaita (GTK4) preferences window, bound to GSettings. |
 | `types.ts` | `HistoryEntry` union (`text` / `image` / `files`), each carrying its `Flavor[]` — the extra MIME representations stored as blobs. |
@@ -94,12 +96,19 @@ npm install
 npm run build            # tsc -> dist/
 npm run compile-schemas  # glib-compile-schemas schemas/
 npm run install-link     # symlink into ~/.local/share/gnome-shell/extensions/
-npx tsc --noEmit         # strict typecheck — the primary automated gate
+npx tsc --noEmit         # strict typecheck
+npm test                 # unit tests under plain gjs (tests/, harness in tests/harness.ts)
 ```
 
 Reload after a build with `gnome-extensions disable/enable clipboard-khipu@ruddyquispe.github.io`; on
-Wayland a re-login guarantees a clean Shell restart. There is **no automated test suite** — the
-typecheck plus a manual QA pass is the current safety net.
+Wayland a re-login guarantees a clean Shell restart.
+
+**Testing.** `npm test` compiles `src/` + `tests/` with `tsconfig.test.json` into `build/test/` and
+runs them with `gjs -m`, with `XDG_DATA_HOME` pointed at a temp dir. Only modules that import nothing
+from GNOME Shell (no `Main`, `St`, `Clutter`, `Meta`) can be loaded there — which is why decisions
+live in pure modules (`pastePlan.ts`, `historyQuery.ts`) and the Shell-bound files only carry them
+out. Put new logic in a pure module and test it; capture, the popup and synthesized input still need
+manual QA.
 
 ## Compatibility policy
 
