@@ -38,6 +38,15 @@ export interface PasteTarget {
 }
 
 let virtualKeyboard: Clutter.VirtualInputDevice | null = null;
+/** Pending synthetic-paste timeout; 0 when none is scheduled. */
+let pasteTimeoutId = 0;
+
+function cancelPendingPaste(): void {
+    if (pasteTimeoutId) {
+        GLib.Source.remove(pasteTimeoutId);
+        pasteTimeoutId = 0;
+    }
+}
 
 function getVirtualKeyboard(): Clutter.VirtualInputDevice {
     if (!virtualKeyboard) {
@@ -295,13 +304,17 @@ export async function pasteEntry(
     if (!autoPaste)
         return;
 
-    GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, PASTE_FOCUS_SETTLE_MS, () => {
+    // A newer paste supersedes one still waiting for focus to settle.
+    cancelPendingPaste();
+    pasteTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, PASTE_FOCUS_SETTLE_MS, () => {
+        pasteTimeoutId = 0;
         simulatePaste(target.isTerminal);
         return GLib.SOURCE_REMOVE;
     });
 }
 
-/** Release the virtual input device. Call from disable(). */
+/** Cancel any pending paste and release the virtual input device. Call from disable(). */
 export function destroyPaster(): void {
+    cancelPendingPaste();
     virtualKeyboard = null;
 }
