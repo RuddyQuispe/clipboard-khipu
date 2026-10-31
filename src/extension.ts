@@ -9,7 +9,8 @@ import { ClipboardMonitor } from './clipboardMonitor.js';
 import { openHistoryPopup } from './historyView.js';
 import type { HistoryPopupHandle } from './historyView.js';
 import { pasteEntry, destroyPaster } from './paster.js';
-import type { PasteTarget } from './paster.js';
+import { classifyTarget, UNKNOWN_TARGET } from './pastePlan.js';
+import type { PasteTarget } from './pastePlan.js';
 
 const KEYBINDING_NAME = 'open-history';
 
@@ -144,39 +145,19 @@ export default class ClipboardKhipuExtension extends Extension {
      * a plain-text target, which is all an unknown window is known to accept.
      */
     private _pasteTarget(settings: Gio.Settings): PasteTarget {
-        const unknown: PasteTarget = {
-            isTerminal: false,
-            prefersRichText: false,
-            isFileManager: false,
-            acceptsFileDrop: false,
-        };
-
         const window = global.display.get_focus_window();
         if (!window)
-            return unknown;
+            return { ...UNKNOWN_TARGET };
 
-        const ids = [
-            window.get_wm_class(),
-            window.get_wm_class_instance(),
-            window.get_gtk_application_id(),
-        ]
-            .filter((id): id is string => typeof id === 'string')
-            .map(id => id.toLowerCase());
-        if (ids.length === 0)
-            return unknown;
-
-        const matches = (key: string): boolean =>
-            settings
-                .get_strv(key)
-                .map(token => token.toLowerCase())
-                .some(token => token.length > 0 && ids.some(id => id.includes(token)));
-
-        return {
-            isTerminal: matches('terminal-wm-classes'),
-            prefersRichText: matches('rich-text-wm-classes'),
-            isFileManager: matches('file-manager-wm-classes'),
-            acceptsFileDrop: matches('file-drop-wm-classes'),
-        };
+        return classifyTarget(
+            [window.get_wm_class(), window.get_wm_class_instance(), window.get_gtk_application_id()],
+            {
+                terminal: settings.get_strv('terminal-wm-classes'),
+                richText: settings.get_strv('rich-text-wm-classes'),
+                fileManager: settings.get_strv('file-manager-wm-classes'),
+                fileDrop: settings.get_strv('file-drop-wm-classes'),
+            }
+        );
     }
 }
 

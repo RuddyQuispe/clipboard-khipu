@@ -4,13 +4,13 @@ import Clutter from 'gi://Clutter';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import type { HistoryEntry, TextDetectedType } from './types.js';
+import { visibleEntries, defaultSelection, previewFor, metaFor } from './historyQuery.js';
 
 const POPUP_WIDTH = 460;
 const POPUP_MAX_HEIGHT = 480;
 const ROW_HEIGHT = 52;
 const SEARCH_ROW_HEIGHT = 44;
 const FOOTER_ROW_HEIGHT = 30;
-const PREVIEW_MAX_LENGTH = 160;
 
 /** `plainOnly` drops the stored rich flavors, pasting the bare text instead. */
 export type HistorySelectHandler = (entry: HistoryEntry, plainOnly: boolean) => void;
@@ -246,9 +246,7 @@ class HistoryPopup implements HistoryPopupHandle {
 
     /** The rows as displayed: search-filtered, then pinned section first. */
     private _currentFiltered(): readonly HistoryEntry[] {
-        const query = this._searchEntry!.get_text().trim().toLowerCase();
-        const filtered = query.length === 0 ? this._entries : this._entries.filter(entry => matches(entry, query));
-        return pinnedFirst(filtered);
+        return visibleEntries(this._entries, this._searchEntry!.get_text());
     }
 
     private _onSearchChanged(): void {
@@ -379,72 +377,6 @@ class HistoryPopup implements HistoryPopupHandle {
     }
 }
 
-/** Stable partition: pinned entries first, each group keeping newest-first order. */
-function pinnedFirst(entries: readonly HistoryEntry[]): HistoryEntry[] {
-    return [...entries.filter(entry => entry.pinned), ...entries.filter(entry => !entry.pinned)];
-}
-
-/** The newest unpinned row, so Enter pastes the latest copy; row 0 if all are pinned. */
-function defaultSelection(entries: readonly HistoryEntry[]): number {
-    const index = entries.findIndex(entry => !entry.pinned);
-    return index === -1 ? 0 : index;
-}
-
-function matches(entry: HistoryEntry, query: string): boolean {
-    switch (entry.kind) {
-    case 'text':
-        return entry.text.toLowerCase().includes(query);
-    case 'files':
-        return entry.uris.some(uri => uri.toLowerCase().includes(query));
-    case 'image':
-        return entry.mime.toLowerCase().includes(query);
-    }
-}
-
-function previewFor(entry: HistoryEntry): string {
-    switch (entry.kind) {
-    case 'text': {
-        const lines = entry.text.split('\n');
-        const firstLine = (lines.find(line => line.trim().length > 0) ?? lines[0] ?? '').trim();
-        const snippet = truncate(firstLine, PREVIEW_MAX_LENGTH);
-        return lines.length > 1 ? `${snippet}  ⏎` : snippet;
-    }
-    case 'image':
-        return `Image (${entry.mime.replace('image/', '')})`;
-    case 'files': {
-        const names = entry.uris.map(uriBasename);
-        return names.length === 1 ? names[0] : `${names[0]} +${names.length - 1} more`;
-    }
-    }
-}
-
-function metaFor(entry: HistoryEntry): string {
-    const when = formatRelativeTime(entry.createdAt);
-    const format = formatBadge(entry);
-
-    switch (entry.kind) {
-    case 'text':
-        return `${entry.detectedType}${format} · ${when}`;
-    case 'image':
-        return `image${format} · ${when}`;
-    case 'files':
-        return `${entry.uris.length} file${entry.uris.length === 1 ? '' : 's'}${format} · ${when}`;
-    }
-}
-
-/** Tells the user this entry carries formatting, and roughly of what kind. */
-function formatBadge(entry: HistoryEntry): string {
-    if (entry.flavors.length === 0)
-        return '';
-
-    const mimes = entry.flavors.map(flavor => flavor.mime);
-    if (mimes.includes('text/html'))
-        return ' · html';
-    if (mimes.some(mime => mime === 'text/rtf' || mime === 'application/rtf'))
-        return ' · rtf';
-    return ' · formatted';
-}
-
 function iconForEntry(entry: HistoryEntry): Gio.Icon {
     switch (entry.kind) {
     case 'image':
@@ -469,29 +401,4 @@ function iconNameForTextType(type: TextDetectedType): string {
     case 'plain':
         return 'edit-copy-symbolic';
     }
-}
-
-function uriBasename(uri: string): string {
-    try {
-        const path = decodeURIComponent(uri.replace(/^file:\/\//, ''));
-        return path.split('/').filter(Boolean).pop() ?? path;
-    } catch {
-        return uri;
-    }
-}
-
-function truncate(text: string, maxLength: number): string {
-    return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
-}
-
-function formatRelativeTime(createdAt: number): string {
-    const minutes = Math.floor((Date.now() - createdAt) / 60000);
-    if (minutes < 1)
-        return 'just now';
-    if (minutes < 60)
-        return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24)
-        return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
 }

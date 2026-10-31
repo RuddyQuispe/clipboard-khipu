@@ -3,39 +3,24 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Clutter from 'gi://Clutter';
 
-import type { HistoryEntry, TextEntry, FilesEntry, Flavor } from './types.js';
+import type { HistoryEntry, TextEntry, FilesEntry } from './types.js';
 import type { ClipboardMonitor } from './clipboardMonitor.js';
-
-const FILES_MIME = 'x-special/gnome-copied-files';
-const URI_LIST_MIME = 'text/uri-list';
-
-/**
- * Rich interchange formats, best first. HTML is the one every word processor
- * and mail client understands; RTF is the fallback for the few that do not.
- *
- * App-specific formats (application/x-openoffice-*) are captured and kept, but
- * never republished on their own: they only round-trip when their companion
- * descriptor format is offered in the same grab, which we cannot do.
- */
-const RICH_MIME_PRIORITY = ['text/html', 'text/rtf', 'application/rtf', 'text/richtext'];
+import {
+    FILES_MIME,
+    URI_LIST_MIME,
+    copiedFilesPayload,
+    filesPasteMode,
+    imageMimeForPath,
+    pickRichFlavor,
+    plainPathsOf,
+    uriListPayload,
+    uriToPath,
+    wantsFormatting,
+} from './pastePlan.js';
+import type { PasteTarget } from './pastePlan.js';
 
 /** Delay (ms) between returning focus to the target window and synthesizing Ctrl+V. */
 const PASTE_FOCUS_SETTLE_MS = 60;
-
-/** What the window receiving the paste can make use of. */
-export interface PasteTarget {
-    /** Terminals paste with Ctrl+Shift+V, and only ever want plain text. */
-    isTerminal: boolean;
-    /** Word processors, spreadsheets and mail clients keep HTML/RTF formatting. */
-    prefersRichText: boolean;
-    /** File managers are the only target that understands a copy/cut file grab. */
-    isFileManager: boolean;
-    /**
-     * Browsers and web chat clients take a file through the same paste handler a
-     * drop would use, so they get the URI list and the file uploads.
-     */
-    acceptsFileDrop: boolean;
-}
 
 let virtualKeyboard: Clutter.VirtualInputDevice | null = null;
 
@@ -67,20 +52,6 @@ function simulatePaste(withShift: boolean): void {
     notifyKey(Clutter.KEY_Control_L, Clutter.KeyState.RELEASED);
 }
 
-/**
- * The best formatted representation stored for `entry`, if any. Only text
- * carries one: an image's own bytes already are its richest form, and a file
- * list is republished as URIs or as the file's contents, never as markup.
- */
-function pickRichFlavor(entry: TextEntry): Flavor | null {
-    for (const mime of RICH_MIME_PRIORITY) {
-        const flavor = entry.flavors.find(candidate => candidate.mime === mime);
-        if (flavor)
-            return flavor;
-    }
-    return null;
-}
-
 async function loadBytes(path: string): Promise<Uint8Array | null> {
     try {
         const [bytes] = await Gio.File.new_for_path(path).load_contents_async(null);
@@ -110,22 +81,6 @@ async function applyRichFlavor(entry: TextEntry, monitor: ClipboardMonitor): Pro
     return true;
 }
 
-/** Local filesystem path behind a file:// URI, percent-decoding included. */
-function uriToPath(uri: string): string | null {
-    return Gio.File.new_for_uri(uri).get_path();
-}
-
-/** Guessed from the name alone — no disk access, and enough to spot a picture. */
-function imageMimeForPath(path: string): string | null {
-    const [contentType] = Gio.content_type_guess(path, null);
-    return contentType.startsWith('image/') ? contentType : null;
-}
-
-/** The files as local paths, one per line; a URI with no local path stays a URI. */
-function plainPathsOf(entry: FilesEntry): string {
-    return entry.uris.map(uri => uriToPath(uri) ?? uri).join('\n');
-}
-
 /**
  * Publishes the files as a URI list — the format a browser reads to fill
  * DataTransfer.files on paste, and what apps accepting file drops ask for.
@@ -133,7 +88,7 @@ function plainPathsOf(entry: FilesEntry): string {
 function setUriList(clipboard: St.Clipboard, monitor: ClipboardMonitor, entry: FilesEntry): void {
     monitor.suppressNextChange();
     clipboard.set_content(St.ClipboardType.CLIPBOARD, URI_LIST_MIME,
-        new TextEncoder().encode(`${entry.uris.join('\r\n')}\r\n`));
+        new TextEncoder().encode(uriListPayload(entry)));
 }
 
 /**
@@ -160,53 +115,39 @@ async function applyFiles(
 ): Promise<void> {
     const clipboard = St.Clipboard.get_default();
 
-    // Terminals only take text, and Ctrl+Enter is the user saying the same
-    // thing about any other app: give me the bare paths.
-    if (target.isTerminal || plainOnly) {
-        monitor.suppressNextChange();
-        clipboard.set_text(St.ClipboardType.CLIPBOARD, plainPathsOf(entry));
-        return;
-    }
-
-    // The only format that round-trips a copy/cut operation, and the only one a
-    // file manager acts on: pasting it into a directory moves or copies the file.
-    if (target.isFileManager) {
-        const payload = `${entry.operation}\n${entry.uris.join('\n')}`;
+    switch (filesPasteMode(entry, target, plainOnly)) {
+    case 'file-manager':
+        // The only format that round-trips a copy/cut operation: pasting it into
+        // a directory copies or moves the file.
         monitor.suppressNextChange();
         clipboard.set_content(St.ClipboardType.CLIPBOARD, FILES_MIME,
-            new TextEncoder().encode(payload));
+            new TextEncoder().encode(copiedFilesPayload(entry)));
         return;
-    }
-
-    // A web page accepts a pasted file the same way it accepts a dropped one, so
-    // the URI list is what makes the upload happen. Always the list, never the
-    // picture's own bytes: attaching the real file keeps its name, where an
-    // embedded image would arrive as an anonymous blob.
-    if (target.acceptsFileDrop) {
+    case 'uri-list':
+        // A web page accepts a pasted file the same way it accepts a dropped one,
+        // so the URI list is what makes the upload happen. Always the list, never
+        // the picture's own bytes: attaching the real file keeps its name.
         setUriList(clipboard, monitor, entry);
         return;
-    }
-
-    if (target.prefersRichText) {
+    case 'embed-image': {
         // A word processor cannot do anything with a file reference, so a lone
-        // picture is handed over as its own bytes and lands embedded. Only one
-        // image fits in a grab; several files fall back to the URI list, which
-        // is what those apps read when they accept file drops.
-        const embedded = entry.uris.length === 1 ? await loadImageOf(entry.uris[0]) : null;
+        // picture is handed over as its own bytes and lands embedded; anything
+        // else falls back to the URI list those apps read for file drops.
+        const embedded = await loadImageOf(entry.uris[0]);
         if (embedded) {
             monitor.suppressNextChange();
             clipboard.set_content(St.ClipboardType.CLIPBOARD, embedded.mime, embedded.bytes);
             return;
         }
-
         setUriList(clipboard, monitor, entry);
         return;
     }
-
-    // Every other window — editors, dialogs, anything unrecognized — is only
-    // known to accept text, so it gets the paths.
-    monitor.suppressNextChange();
-    clipboard.set_text(St.ClipboardType.CLIPBOARD, plainPathsOf(entry));
+    case 'paths':
+        // Terminals, Ctrl+Enter and every unrecognized window are only known to
+        // accept text, so they get the bare paths.
+        monitor.suppressNextChange();
+        clipboard.set_text(St.ClipboardType.CLIPBOARD, plainPathsOf(entry));
+    }
 }
 
 /** The picture behind a file:// URI, or null if it is not one or is gone. */
@@ -265,10 +206,7 @@ async function applyToClipboard(
     target: PasteTarget,
     plainOnly: boolean
 ): Promise<void> {
-    const wantsFormatting =
-        entry.kind === 'text' && !plainOnly && !target.isTerminal && target.prefersRichText;
-
-    if (wantsFormatting && await applyRichFlavor(entry, monitor))
+    if (entry.kind === 'text' && wantsFormatting(entry, target, plainOnly) && await applyRichFlavor(entry, monitor))
         return;
 
     await applyPrimary(entry, monitor, target, plainOnly);
