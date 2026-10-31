@@ -5,29 +5,84 @@
 A developer-focused clipboard history for GNOME Shell — like the Windows `Super+V`
 clipboard stack, but native to GNOME and careful about formatting.
 
-Press **`Super+V`** to see what you've copied and paste it back **exactly** as it was.
+Press your shortcut (e.g. **`Super+V`**) to see what you've copied and paste it back **exactly** as
+it was.
 
 ## Install
+
+Requires GNOME Shell 46–50 (see [Compatibility](#compatibility)), plus `curl` and `unzip`.
+
+### 1. Install the extension
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RuddyQuispe/clipboard-khipu/master/install.sh | bash
 ```
 
-This downloads the latest prebuilt release and installs it — no Node or build tools needed.
-To update to a newer release later, just run the same command again.
+This downloads the latest prebuilt release from
+[GitHub Releases](https://github.com/RuddyQuispe/clipboard-khipu/releases) and installs it into
+`~/.local/share/gnome-shell/extensions/` — no Node or build tools needed.
 
-If GNOME Shell doesn't pick it up immediately, log out and back in, then run:
+If GNOME Shell doesn't pick it up immediately (always the case on Wayland for a first install), log
+out and back in, then run:
 
 ```bash
 gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
+```
+
+Check that it's running — the state should read `ACTIVE`:
+
+```bash
+gnome-extensions info clipboard-khipu@ruddyquispe.github.io
+```
+
+### 2. Choose your shortcut
+
+The extension ships **without** a shortcut — extensions.gnome.org forbids clipboard extensions from
+setting one by default — so nothing happens until you pick one. Open the preferences:
+
+```bash
+gnome-extensions prefs clipboard-khipu@ruddyquispe.github.io
+```
+
+and type it under **Shortcut → Open history**, e.g. `<Super>v`. Or set it from a terminal:
+
+```bash
+gsettings --schemadir ~/.local/share/gnome-shell/extensions/clipboard-khipu@ruddyquispe.github.io/schemas \
+  set org.gnome.shell.extensions.clipboard-khipu open-history "['<Super>v']"
+```
+
+> [!IMPORTANT]
+> GNOME already uses **`Super+V`** to open the notification list. If you pick `Super+V` and GNOME's
+> notification list opens instead of the history, free it — `Super+M` keeps opening the
+> notifications:
+>
+> ```bash
+> gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super>m']"
+> ```
+
+### Update
+
+Run the install command again — it always fetches the latest release, and your history and
+preferences are kept. Then log out and back in (or disable/enable the extension) so GNOME Shell
+loads the new code.
+
+> Coming from 0.1.x and `Super+V` stopped working? Since 0.2.0 there is no default shortcut; set it
+> again as in [step 2](#2-choose-your-shortcut).
+
+### Uninstall
+
+```bash
+gnome-extensions uninstall clipboard-khipu@ruddyquispe.github.io
+rm -rf ~/.local/share/clipboard-khipu   # optional: delete the stored history
 ```
 
 > Prefer to build it yourself? See [Contributing](#contributing) for the from-source install.
 
 ## How it works
 
-0. Set your shortcut once in **Preferences → Shortcut** (e.g. `<Super>v`). No shortcut is set by
-   default, as extensions.gnome.org requires for clipboard extensions.
+0. Set your shortcut once in **Preferences → Shortcut** (e.g. `<Super>v`) — see
+   [Install, step 2](#2-choose-your-shortcut). No shortcut is set by default, as
+   extensions.gnome.org requires for clipboard extensions.
 1. Copy things as you normally would — text, an image, or files in a file manager (Nautilus).
 2. Press your shortcut (e.g. **`Super+V`**). A searchable popup lists your recent clipboard items.
 3. Pick one — with the keyboard or the mouse — and it's pasted back into whatever you were using,
@@ -242,12 +297,13 @@ single-item direct paste; search, delete, click-outside; history survives a disa
 
 ### Release
 
-Push a `v*.*.*` tag. GitHub Actions builds, packages a `.zip`, and publishes it as a Release asset
-that `install.sh` consumes:
+Bump `version-name` in `metadata.json`, merge to `master`, then push a matching `v*.*.*` tag.
+GitHub Actions builds, packages a `.zip`, and publishes it as a Release asset; `install.sh` always
+installs the release marked *Latest*:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.1
+git push origin v0.2.1
 ```
 
 ## License

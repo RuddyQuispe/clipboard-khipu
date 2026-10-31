@@ -57,10 +57,21 @@ fi
 echo "Enabling extension…"
 if gnome-extensions enable "$UUID" 2>/dev/null; then
     echo
-    echo "Done. Press Super+V to open your clipboard history."
+    echo "Done."
 else
     echo
     echo "Installed, but GNOME Shell hasn't picked it up yet."
     echo "Log out and back in, then run:"
     echo "    gnome-extensions enable $UUID"
 fi
+
+# No shortcut ships by default (an extensions.gnome.org rule for clipboard
+# extensions), so tell the user how to pick one.
+echo
+echo "Next, choose the shortcut that opens the history (none is set by default):"
+echo "    gnome-extensions prefs $UUID"
+echo "or, for Super+V:"
+echo "    gsettings --schemadir $TARGET_DIR/schemas \\"
+echo "      set org.gnome.shell.extensions.clipboard-khipu open-history \"['<Super>v']\""
+echo "If Super+V opens GNOME's notification list instead, free it with:"
+echo "    gsettings set org.gnome.shell.keybindings toggle-message-tray \"['<Super>m']\""

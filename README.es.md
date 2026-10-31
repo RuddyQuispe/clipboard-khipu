@@ -5,22 +5,75 @@
 Un historial de portapapeles para GNOME Shell pensado para desarrolladores — como el `Super+V` de
 Windows, pero nativo de GNOME y cuidadoso con el formato.
 
-Presiona **`Super+V`** para ver lo que copiaste y pegarlo de vuelta **exactamente** como estaba.
+Presiona tu atajo (por ejemplo **`Super+V`**) para ver lo que copiaste y pegarlo de vuelta
+**exactamente** como estaba.
 
 ## Instalación
+
+Requiere GNOME Shell 46–50 (ver [Compatibilidad](#compatibilidad)), además de `curl` y `unzip`.
+
+### 1. Instalar la extensión
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/RuddyQuispe/clipboard-khipu/master/install.sh | bash
 ```
 
-Esto descarga la última versión ya compilada y la instala — no necesitas Node ni herramientas de
-compilación.
-Para actualizar a una versión más nueva después, corre el mismo comando otra vez.
+Esto descarga la última versión ya compilada desde
+[GitHub Releases](https://github.com/RuddyQuispe/clipboard-khipu/releases) y la instala en
+`~/.local/share/gnome-shell/extensions/` — no necesitas Node ni herramientas de compilación.
 
-Si GNOME Shell no la detecta de inmediato, cierra sesión y vuelve a entrar, luego corre:
+Si GNOME Shell no la detecta de inmediato (siempre pasa en Wayland la primera vez), cierra sesión y
+vuelve a entrar, luego corre:
 
 ```bash
 gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
+```
+
+Comprueba que esté corriendo — el estado debe decir `ACTIVE`:
+
+```bash
+gnome-extensions info clipboard-khipu@ruddyquispe.github.io
+```
+
+### 2. Elegir tu atajo
+
+La extensión viene **sin** atajo — extensions.gnome.org prohíbe que una extensión de portapapeles
+defina uno por defecto — así que no hace nada hasta que elijas uno. Abre las preferencias:
+
+```bash
+gnome-extensions prefs clipboard-khipu@ruddyquispe.github.io
+```
+
+y escríbelo en **Shortcut → Open history**, por ejemplo `<Super>v`. O configúralo desde una terminal:
+
+```bash
+gsettings --schemadir ~/.local/share/gnome-shell/extensions/clipboard-khipu@ruddyquispe.github.io/schemas \
+  set org.gnome.shell.extensions.clipboard-khipu open-history "['<Super>v']"
+```
+
+> [!IMPORTANT]
+> GNOME ya usa **`Super+V`** para abrir la lista de notificaciones. Si eliges `Super+V` y se abre
+> la lista de notificaciones en lugar del historial, libéralo — `Super+M` sigue abriendo las
+> notificaciones:
+>
+> ```bash
+> gsettings set org.gnome.shell.keybindings toggle-message-tray "['<Super>m']"
+> ```
+
+### Actualizar
+
+Corre el comando de instalación otra vez — siempre descarga la última versión, y tu historial y
+preferencias se conservan. Luego cierra sesión y vuelve a entrar (o deshabilita y habilita la
+extensión) para que GNOME Shell cargue el código nuevo.
+
+> ¿Vienes de 0.1.x y `Super+V` dejó de funcionar? Desde 0.2.0 no hay atajo por defecto; vuelve a
+> configurarlo como en el [paso 2](#2-elegir-tu-atajo).
+
+### Desinstalar
+
+```bash
+gnome-extensions uninstall clipboard-khipu@ruddyquispe.github.io
+rm -rf ~/.local/share/clipboard-khipu   # opcional: borra el historial guardado
 ```
 
 > ¿Prefieres compilarla tú mismo? Ve a [Contribuir](#contribuir) para la instalación desde código
@@ -28,8 +81,9 @@ gnome-extensions enable clipboard-khipu@ruddyquispe.github.io
 
 ## Cómo funciona
 
-0. Configura tu atajo una vez en **Preferencias → Atajo** (por ejemplo `<Super>v`). No hay atajo
-   por defecto, como exige extensions.gnome.org para extensiones de portapapeles.
+0. Configura tu atajo una vez en **Preferencias → Atajo** (por ejemplo `<Super>v`) — ver
+   [Instalación, paso 2](#2-elegir-tu-atajo). No hay atajo por defecto, como exige
+   extensions.gnome.org para extensiones de portapapeles.
 1. Copia cosas como lo harías normalmente — texto, una imagen, o archivos en un gestor de archivos
    (Nautilus).
 2. Presiona tu atajo (por ejemplo **`Super+V`**). Aparece un popup con búsqueda que lista tus elementos copiados
@@ -257,12 +311,13 @@ con un solo elemento; búsqueda, borrado, clic afuera; el historial sobrevive a 
 
 ### Publicar una versión
 
-Sube un tag `v*.*.*`. GitHub Actions compila, empaqueta un `.zip`, y lo publica como asset de un
-Release que `install.sh` consume:
+Actualiza `version-name` en `metadata.json`, haz merge a `master` y sube un tag `v*.*.*` que
+coincida. GitHub Actions compila, empaqueta un `.zip`, y lo publica como asset de un Release;
+`install.sh` siempre instala el release marcado como *Latest*:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.1
+git push origin v0.2.1
 ```
 
 ## Licencia
