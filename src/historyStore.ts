@@ -96,10 +96,16 @@ export class HistoryStore {
             this._entries = [];
         }
 
-        this._loaded = true;
-        this._sweepOrphanBlobs().catch((error: unknown) => {
+        // Sweep before accepting copies: the sweep snapshots the referenced
+        // blobs up front, so a copy landing mid-sweep would see its freshly
+        // written blobs deleted as orphans.
+        try {
+            await this._sweepOrphanBlobs();
+        } catch (error) {
             console.warn('clipboard-khipu: failed to sweep orphan blobs', error);
-        });
+        }
+
+        this._loaded = true;
     }
 
     async addText(text: string, flavors: FlavorMap): Promise<void> {
