@@ -66,6 +66,11 @@ Run the install command again — it always fetches the latest release, and your
 preferences are kept. Then log out and back in (or disable/enable the extension) so GNOME Shell
 loads the new code.
 
+> [!NOTE]
+> The installer fetches the latest **published release**, not the newest commit on `master`. If a
+> change hasn't been released yet, it won't be installed — build from source instead
+> ([Update from source](#update-from-source)).
+
 > Coming from 0.1.x and `Super+V` stopped working? Since 0.2.0 there is no default shortcut; set it
 > again as in [step 2](#2-choose-your-shortcut).
 
@@ -263,11 +268,10 @@ clean Shell restart.
 > A nested-shell workflow (`scripts/run-nested.sh`) exists but relies on `gnome-shell --nested`,
 > which was **removed in GNOME 50**. On 50+ use the disable/enable or re-login loop above.
 
-### Update
+### Update from source
 
-If you installed from source (not via `install.sh`), pulling new commits doesn't update the running
-extension by itself — `install-link` symlinks each `dist/*.js` file individually, so a fresh build
-still needs to be re-linked:
+Pulling new commits doesn't update the running extension by itself — `install-link` symlinks each
+`dist/*.js` file individually, so a fresh build still needs to be re-linked:
 
 ```bash
 git pull
@@ -277,8 +281,12 @@ npm run compile-schemas
 npm run install-link       # safe to re-run any time, re-links new/changed files
 ```
 
+`install-link` replaces whatever is installed, including a release installed with `install.sh`, so
+this is also how you switch from the release to your local build. Your history and settings are kept.
+
 Then reload the extension as in the [dev reload loop](#dev-reload-loop) above (disable/enable, or
-log out and back in on Wayland if that doesn't take).
+log out and back in on Wayland if that doesn't take). If the shortcut does nothing afterwards, check
+that one is set (see [Install](#install)).
 
 ### Verify
 

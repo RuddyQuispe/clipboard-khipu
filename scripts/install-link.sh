@@ -10,6 +10,13 @@ if [ ! -d "$PROJECT_DIR/dist" ]; then
     exit 1
 fi
 
+# Start clean: a previous install.sh install leaves real files and a real
+# schemas/ directory, and `ln -sfn` onto an existing directory links *inside*
+# it instead of replacing it. History lives elsewhere, so nothing is lost.
+case "${TARGET_DIR:?}" in
+    */gnome-shell/extensions/"$UUID") rm -rf "$TARGET_DIR" ;;
+    *) echo "Refusing to remove unexpected path: $TARGET_DIR" >&2; exit 1 ;;
+esac
 mkdir -p "$TARGET_DIR"
 
 ln -sfn "$PROJECT_DIR/metadata.json" "$TARGET_DIR/metadata.json"

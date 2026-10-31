@@ -66,6 +66,11 @@ Corre el comando de instalación otra vez — siempre descarga la última versi�
 preferencias se conservan. Luego cierra sesión y vuelve a entrar (o deshabilita y habilita la
 extensión) para que GNOME Shell cargue el código nuevo.
 
+> [!NOTE]
+> El instalador descarga la última **versión publicada** (release), no el commit más nuevo de
+> `master`. Si un cambio todavía no se publicó, no se instala — compílala desde el código fuente
+> ([Actualizar desde el código fuente](#actualizar-desde-el-código-fuente)).
+
 > ¿Vienes de 0.1.x y `Super+V` dejó de funcionar? Desde 0.2.0 no hay atajo por defecto; vuelve a
 > configurarlo como en el [paso 2](#2-elegir-tu-atajo).
 
@@ -276,11 +281,11 @@ vuelve a entrar para un reinicio limpio del Shell.
 > `gnome-shell --nested`, que fue **eliminado en GNOME 50**. En 50+ usa el ciclo disable/enable o
 > el re-login de arriba.
 
-### Actualizar
+### Actualizar desde el código fuente
 
-Si instalaste desde código fuente (no con `install.sh`), traer commits nuevos no actualiza la
-extensión en ejecución por sí solo — `install-link` enlaza cada archivo de `dist/*.js` de forma
-individual, así que una recompilación nueva igual necesita volver a enlazarse:
+Traer commits nuevos no actualiza la extensión en ejecución por sí solo — `install-link` enlaza cada
+archivo de `dist/*.js` de forma individual, así que una recompilación nueva igual necesita volver a
+enlazarse:
 
 ```bash
 git pull
@@ -290,8 +295,13 @@ npm run compile-schemas
 npm run install-link       # se puede volver a correr siempre, sin riesgo
 ```
 
+`install-link` reemplaza lo que esté instalado, incluida una versión instalada con `install.sh`, así
+que así también se pasa de la versión publicada a tu compilación local. Tu historial y tu
+configuración se conservan.
+
 Luego recarga la extensión como en el [ciclo de recarga](#ciclo-de-recarga-en-desarrollo) de
-arriba (disable/enable, o cerrar sesión y volver a entrar en Wayland si eso no funciona).
+arriba (disable/enable, o cerrar sesión y volver a entrar en Wayland si eso no funciona). Si
+después el atajo no hace nada, revisa que tengas uno configurado (ver [Instalación](#instalación)).
 
 ### Verificar
 
